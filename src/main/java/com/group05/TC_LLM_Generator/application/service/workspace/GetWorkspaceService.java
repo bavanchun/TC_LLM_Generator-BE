@@ -1,24 +1,23 @@
-package com.group05.TC_LLM_Generator.application.service;
+package com.group05.TC_LLM_Generator.application.service.workspace;
 
-import com.group05.TC_LLM_Generator.application.port.in.GetWorkspaceUseCase;
+import com.group05.TC_LLM_Generator.application.port.in.workspace.GetWorkspaceUseCase;
 import com.group05.TC_LLM_Generator.domain.model.entity.Workspace;
 import com.group05.TC_LLM_Generator.domain.repository.WorkspaceRepo;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
+
 @Service
 @RequiredArgsConstructor
-public class WorkspaceService implements GetWorkspaceUseCase {
+public class GetWorkspaceService implements GetWorkspaceUseCase {
 
     private final WorkspaceRepo workspaceRepo;
 
     @Override
-    @Transactional
-    public List<Workspace> getWorkspaceForUser(UUID userId) {
+    public List<Workspace> execute(UUID userId) {
         List<Workspace> workspaces = workspaceRepo.findAllByOwnerId(userId);
 
         if (workspaces.isEmpty()) {
@@ -33,4 +32,5 @@ public class WorkspaceService implements GetWorkspaceUseCase {
 
         return workspaces;
     }
+
 }
