@@ -30,7 +30,7 @@ public class UserEntity {
     @Column(name = "email", nullable = false, unique = true, length = 255)
     private String email;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
+    @Column(name = "password_hash", length = 255) // Nullable for OAuth users
     private String passwordHash;
 
     @Column(name = "full_name", nullable = false, length = 255)
@@ -39,12 +39,18 @@ public class UserEntity {
     @Column(name = "status", nullable = false, length = 50)
     private String status;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "auth_provider", nullable = false, length = 50)
+    private String authProvider; // LOCAL, GOOGLE
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     @CreationTimestamp
     private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
     @UpdateTimestamp
     private Instant updatedAt;
+
+    @Column(name = "last_active_workspace_id")
+    private UUID lastActiveWorkspaceId;
 
 }
