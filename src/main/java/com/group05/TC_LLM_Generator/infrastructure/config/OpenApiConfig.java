@@ -1,9 +1,12 @@
 package com.group05.TC_LLM_Generator.infrastructure.config;
 
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -21,9 +24,19 @@ public class OpenApiConfig {
     @Value("${spring.application.name}")
     private String applicationName;
 
+    private static final String BEARER_SCHEME = "bearerAuth";
+
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
+                .addSecurityItem(new SecurityRequirement().addList(BEARER_SCHEME))
+                .components(new Components()
+                        .addSecuritySchemes(BEARER_SCHEME, new SecurityScheme()
+                                .name(BEARER_SCHEME)
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")
+                                .description("Paste your JWT access token here")))
                 .info(new Info()
                         .title("TC LLM Generator API")
                         .version("1.0.0")
@@ -38,7 +51,7 @@ public class OpenApiConfig {
                                 - **Test Cases Management**: Generate and manage test cases
 
                                 ## Authentication
-                                Currently, the API is open for development. JWT authentication will be added in future versions.
+                                Use the **Authorize** button (lock icon) and paste your JWT access token to authenticate requests.
 
                                 ## API Endpoints
                                 All endpoints follow REST conventions and return JSON responses with the following structure:
