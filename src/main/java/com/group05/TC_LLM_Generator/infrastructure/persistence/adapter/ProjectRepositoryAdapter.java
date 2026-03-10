@@ -67,6 +67,11 @@ public class ProjectRepositoryAdapter implements ProjectRepositoryPort {
     }
 
     @Override
+    public Page<Project> findAccessibleByUser(UUID userId, Pageable pageable) {
+        return jpaRepository.findAccessibleByUser(userId, pageable);
+    }
+
+    @Override
     public void deleteById(UUID projectId) {
         jpaRepository.deleteById(projectId);
     }

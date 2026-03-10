@@ -11,9 +11,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
-/**
- * Request DTO for creating a new project
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -22,9 +19,6 @@ public class CreateProjectRequest {
 
     @NotNull(message = "Workspace ID is required")
     private UUID workspaceId;
-
-    @NotNull(message = "Created by user ID is required")
-    private UUID createdByUserId;
 
     @NotBlank(message = "Project key is required")
     @Size(max = 20, message = "Project key must not exceed 20 characters")

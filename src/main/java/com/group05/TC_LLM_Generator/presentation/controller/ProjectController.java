@@ -23,14 +23,12 @@ import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-/**
- * REST Controller for Project CRUD operations.
- * Implements HATEOAS Level 3 REST API with wrapped responses and pagination.
- */
 @RestController
 @RequestMapping("/api/v1/projects")
 @RequiredArgsConstructor
@@ -43,19 +41,18 @@ public class ProjectController {
     private final ProjectModelAssembler assembler;
     private final PagedResourcesAssembler<Project> pagedResourcesAssembler;
 
-    /**
-     * Create a new project
-     * POST /api/v1/projects
-     */
     @PostMapping
     public ResponseEntity<ApiResponse<ProjectResponse>> createProject(
+            @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody CreateProjectRequest request) {
+
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
 
         Workspace workspace = workspaceService.getWorkspaceById(request.getWorkspaceId())
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace", "id", request.getWorkspaceId()));
 
-        UserEntity creator = userService.getUserById(request.getCreatedByUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.getCreatedByUserId()));
+        UserEntity creator = userService.getUserById(currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
 
         Project project = Project.builder()
                 .workspace(workspace)
@@ -76,59 +73,50 @@ public class ProjectController {
                 .body(ApiResponse.success(response, "Project created successfully"));
     }
 
-    /**
-     * Get project by ID
-     * GET /api/v1/projects/{id}
-     */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ProjectResponse>> getProjectById(@PathVariable("id") UUID id) {
         Project project = projectService.getProjectById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", "id", id));
 
         ProjectResponse response = assembler.toModel(project);
-
         return ResponseEntity.ok(ApiResponse.success(response, "Project retrieved successfully"));
     }
 
-    /**
-     * Get project by project key
-     * GET /api/v1/projects/key/{projectKey}
-     */
     @GetMapping("/key/{projectKey}")
     public ResponseEntity<ApiResponse<ProjectResponse>> getProjectByKey(@PathVariable("projectKey") String projectKey) {
         Project project = projectService.getProjectByKey(projectKey)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", "key", projectKey));
 
         ProjectResponse response = assembler.toModel(project);
-
         return ResponseEntity.ok(ApiResponse.success(response, "Project retrieved successfully"));
     }
 
-    /**
-     * Get all projects with pagination
-     * GET /api/v1/projects?page=0&size=20&sort=createdAt,desc
-     */
     @GetMapping
-    public ResponseEntity<ApiResponse<PagedModel<ProjectResponse>>> getAllProjects(
+    public ResponseEntity<ApiResponse<PagedModel<ProjectResponse>>> getMyProjects(
+            @AuthenticationPrincipal Jwt jwt,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        Page<Project> page = projectService.getAllProjects(pageable);
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+        Page<Project> page = projectService.getAccessibleProjects(currentUserId, pageable);
         PagedModel<ProjectResponse> pagedModel = pagedResourcesAssembler.toModel(page, assembler);
 
         return ResponseEntity.ok(ApiResponse.success(pagedModel, "Projects retrieved successfully"));
     }
 
-    /**
-     * Update project by ID
-     * PUT /api/v1/projects/{id}
-     */
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<ProjectResponse>> updateProject(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateProjectRequest request) {
 
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
         Project existingProject = projectService.getProjectById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", "id", id));
+
+        if (!existingProject.getCreatedByUser().getUserId().equals(currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Only the project creator can update this project"));
+        }
 
         mapper.updateEntity(request, existingProject);
         Project updatedProject = projectService.updateProject(id, existingProject);
@@ -137,25 +125,24 @@ public class ProjectController {
         return ResponseEntity.ok(ApiResponse.success(response, "Project updated successfully"));
     }
 
-    /**
-     * Delete project by ID
-     * DELETE /api/v1/projects/{id}
-     */
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteProject(@PathVariable("id") UUID id) {
-        if (!projectService.projectExists(id)) {
-            throw new ResourceNotFoundException("Project", "id", id);
+    public ResponseEntity<ApiResponse<Void>> deleteProject(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("id") UUID id) {
+
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+        Project project = projectService.getProjectById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", id));
+
+        if (!project.getCreatedByUser().getUserId().equals(currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Only the project creator can delete this project"));
         }
 
         projectService.deleteProject(id);
-
         return ResponseEntity.ok(ApiResponse.success("Project deleted successfully"));
     }
 
-    /**
-     * Get projects by workspace ID with pagination
-     * GET /api/v1/projects/workspace/{workspaceId}?page=0&size=20
-     */
     @GetMapping("/workspace/{workspaceId}")
     public ResponseEntity<ApiResponse<PagedModel<ProjectResponse>>> getProjectsByWorkspace(
             @PathVariable("workspaceId") UUID workspaceId,

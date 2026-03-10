@@ -1,7 +1,11 @@
 package com.group05.TC_LLM_Generator.presentation.controller;
 
+import com.group05.TC_LLM_Generator.application.service.ProjectService;
 import com.group05.TC_LLM_Generator.application.service.TestPlanService;
+import com.group05.TC_LLM_Generator.application.service.UserService;
+import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.Project;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.TestPlan;
+import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.UserEntity;
 import com.group05.TC_LLM_Generator.presentation.assembler.TestPlanModelAssembler;
 import com.group05.TC_LLM_Generator.presentation.dto.common.ApiResponse;
 import com.group05.TC_LLM_Generator.presentation.dto.request.CreateTestPlanRequest;
@@ -19,33 +23,45 @@ import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-/**
- * REST Controller for TestPlan CRUD operations.
- * Implements HATEOAS Level 3 REST API with wrapped responses and pagination.
- */
 @RestController
 @RequestMapping("/api/v1/test-plans")
 @RequiredArgsConstructor
 public class TestPlanController {
 
     private final TestPlanService testPlanService;
+    private final ProjectService projectService;
+    private final UserService userService;
     private final TestPlanPresentationMapper mapper;
     private final TestPlanModelAssembler assembler;
     private final PagedResourcesAssembler<TestPlan> pagedResourcesAssembler;
 
-    /**
-     * Create a new test plan
-     * POST /api/v1/test-plans
-     */
     @PostMapping
     public ResponseEntity<ApiResponse<TestPlanResponse>> createTestPlan(
+            @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody CreateTestPlanRequest request) {
 
-        TestPlan testPlan = mapper.toEntity(request);
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+
+        Project project = projectService.getProjectById(request.getProjectId())
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", request.getProjectId()));
+
+        UserEntity creator = userService.getUserById(currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
+
+        TestPlan testPlan = TestPlan.builder()
+                .project(project)
+                .createdByUser(creator)
+                .name(request.getName())
+                .description(request.getDescription())
+                .status(request.getStatus())
+                .build();
+
         TestPlan savedTestPlan = testPlanService.createTestPlan(testPlan);
         TestPlanResponse response = assembler.toModel(savedTestPlan);
 
@@ -54,24 +70,15 @@ public class TestPlanController {
                 .body(ApiResponse.success(response, "Test plan created successfully"));
     }
 
-    /**
-     * Get test plan by ID
-     * GET /api/v1/test-plans/{id}
-     */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<TestPlanResponse>> getTestPlanById(@PathVariable("id") UUID id) {
         TestPlan testPlan = testPlanService.getTestPlanById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("TestPlan", "id", id));
 
         TestPlanResponse response = assembler.toModel(testPlan);
-
         return ResponseEntity.ok(ApiResponse.success(response, "Test plan retrieved successfully"));
     }
 
-    /**
-     * Get all test plans with pagination
-     * GET /api/v1/test-plans?page=0&size=20&sort=createdAt,desc
-     */
     @GetMapping
     public ResponseEntity<ApiResponse<PagedModel<TestPlanResponse>>> getAllTestPlans(
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -82,10 +89,6 @@ public class TestPlanController {
         return ResponseEntity.ok(ApiResponse.success(pagedModel, "Test plans retrieved successfully"));
     }
 
-    /**
-     * Update test plan by ID
-     * PUT /api/v1/test-plans/{id}
-     */
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<TestPlanResponse>> updateTestPlan(
             @PathVariable("id") UUID id,
@@ -101,10 +104,6 @@ public class TestPlanController {
         return ResponseEntity.ok(ApiResponse.success(response, "Test plan updated successfully"));
     }
 
-    /**
-     * Delete test plan by ID
-     * DELETE /api/v1/test-plans/{id}
-     */
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteTestPlan(@PathVariable("id") UUID id) {
         if (!testPlanService.testPlanExists(id)) {
@@ -112,14 +111,9 @@ public class TestPlanController {
         }
 
         testPlanService.deleteTestPlan(id);
-
         return ResponseEntity.ok(ApiResponse.success("Test plan deleted successfully"));
     }
 
-    /**
-     * Get test plans by project ID with pagination
-     * GET /api/v1/test-plans/project/{projectId}?page=0&size=20
-     */
     @GetMapping("/project/{projectId}")
     public ResponseEntity<ApiResponse<PagedModel<TestPlanResponse>>> getTestPlansByProject(
             @PathVariable("projectId") UUID projectId,

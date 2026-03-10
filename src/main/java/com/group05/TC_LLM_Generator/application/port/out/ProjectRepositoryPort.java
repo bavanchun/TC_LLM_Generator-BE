@@ -32,6 +32,8 @@ public interface ProjectRepositoryPort {
 
     Page<Project> findByCreatedByUserId(UUID userId, Pageable pageable);
 
+    Page<Project> findAccessibleByUser(UUID userId, Pageable pageable);
+
     void deleteById(UUID projectId);
 
     boolean existsById(UUID projectId);

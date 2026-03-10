@@ -83,11 +83,12 @@ public class ProjectService {
         return projectRepository.findByCreatedByUserId(userId);
     }
 
-    /**
-     * Get projects by creator user ID with pagination
-     */
     public Page<Project> getProjectsByCreator(UUID userId, Pageable pageable) {
         return projectRepository.findByCreatedByUserId(userId, pageable);
+    }
+
+    public Page<Project> getAccessibleProjects(UUID userId, Pageable pageable) {
+        return projectRepository.findAccessibleByUser(userId, pageable);
     }
 
     /**

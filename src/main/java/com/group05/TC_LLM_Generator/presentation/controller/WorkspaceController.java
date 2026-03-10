@@ -21,14 +21,12 @@ import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-/**
- * REST Controller for Workspace CRUD operations.
- * Implements HATEOAS Level 3 REST API with wrapped responses and pagination.
- */
 @RestController
 @RequestMapping("/api/v1/workspaces")
 @RequiredArgsConstructor
@@ -40,16 +38,14 @@ public class WorkspaceController {
     private final WorkspaceModelAssembler assembler;
     private final PagedResourcesAssembler<Workspace> pagedResourcesAssembler;
 
-    /**
-     * Create a new workspace
-     * POST /api/v1/workspaces
-     */
     @PostMapping
     public ResponseEntity<ApiResponse<WorkspaceResponse>> createWorkspace(
+            @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody CreateWorkspaceRequest request) {
 
-        UserEntity owner = userService.getUserById(request.getOwnerUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.getOwnerUserId()));
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+        UserEntity owner = userService.getUserById(currentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
 
         Workspace workspace = Workspace.builder()
                 .ownerUser(owner)
@@ -65,45 +61,41 @@ public class WorkspaceController {
                 .body(ApiResponse.success(response, "Workspace created successfully"));
     }
 
-    /**
-     * Get workspace by ID
-     * GET /api/v1/workspaces/{id}
-     */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<WorkspaceResponse>> getWorkspaceById(@PathVariable("id") UUID id) {
         Workspace workspace = workspaceService.getWorkspaceById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace", "id", id));
 
         WorkspaceResponse response = assembler.toModel(workspace);
-
         return ResponseEntity.ok(ApiResponse.success(response, "Workspace retrieved successfully"));
     }
 
-    /**
-     * Get all workspaces with pagination
-     * GET /api/v1/workspaces?page=0&size=20&sort=createdAt,desc
-     */
     @GetMapping
-    public ResponseEntity<ApiResponse<PagedModel<WorkspaceResponse>>> getAllWorkspaces(
+    public ResponseEntity<ApiResponse<PagedModel<WorkspaceResponse>>> getMyWorkspaces(
+            @AuthenticationPrincipal Jwt jwt,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        Page<Workspace> page = workspaceService.getAllWorkspaces(pageable);
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+        Page<Workspace> page = workspaceService.getAccessibleWorkspaces(currentUserId, pageable);
         PagedModel<WorkspaceResponse> pagedModel = pagedResourcesAssembler.toModel(page, assembler);
 
         return ResponseEntity.ok(ApiResponse.success(pagedModel, "Workspaces retrieved successfully"));
     }
 
-    /**
-     * Update workspace by ID
-     * PUT /api/v1/workspaces/{id}
-     */
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<WorkspaceResponse>> updateWorkspace(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateWorkspaceRequest request) {
 
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
         Workspace existingWorkspace = workspaceService.getWorkspaceById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace", "id", id));
+
+        if (!existingWorkspace.getOwnerUser().getUserId().equals(currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Only the workspace owner can update this workspace"));
+        }
 
         mapper.updateEntity(request, existingWorkspace);
         Workspace updatedWorkspace = workspaceService.updateWorkspace(id, existingWorkspace);
@@ -112,25 +104,24 @@ public class WorkspaceController {
         return ResponseEntity.ok(ApiResponse.success(response, "Workspace updated successfully"));
     }
 
-    /**
-     * Delete workspace by ID
-     * DELETE /api/v1/workspaces/{id}
-     */
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteWorkspace(@PathVariable("id") UUID id) {
-        if (!workspaceService.workspaceExists(id)) {
-            throw new ResourceNotFoundException("Workspace", "id", id);
+    public ResponseEntity<ApiResponse<Void>> deleteWorkspace(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("id") UUID id) {
+
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+        Workspace workspace = workspaceService.getWorkspaceById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Workspace", "id", id));
+
+        if (!workspace.getOwnerUser().getUserId().equals(currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Only the workspace owner can delete this workspace"));
         }
 
         workspaceService.deleteWorkspace(id);
-
         return ResponseEntity.ok(ApiResponse.success("Workspace deleted successfully"));
     }
 
-    /**
-     * Get workspaces by owner user ID with pagination
-     * GET /api/v1/workspaces/owner/{userId}?page=0&size=20
-     */
     @GetMapping("/owner/{userId}")
     public ResponseEntity<ApiResponse<PagedModel<WorkspaceResponse>>> getWorkspacesByOwner(
             @PathVariable("userId") UUID userId,

@@ -52,6 +52,11 @@ public class WorkspaceRepositoryAdapter implements WorkspaceRepositoryPort {
     }
 
     @Override
+    public Page<Workspace> findAccessibleByUser(UUID userId, Pageable pageable) {
+        return jpaRepository.findAccessibleByUser(userId, pageable);
+    }
+
+    @Override
     public void deleteById(UUID workspaceId) {
         jpaRepository.deleteById(workspaceId);
     }

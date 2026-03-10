@@ -59,11 +59,12 @@ public class WorkspaceService {
         return workspaceRepository.findByOwnerUserId(ownerUserId);
     }
 
-    /**
-     * Get workspaces by owner user ID with pagination
-     */
     public Page<Workspace> getWorkspacesByOwner(UUID ownerUserId, Pageable pageable) {
         return workspaceRepository.findByOwnerUserId(ownerUserId, pageable);
+    }
+
+    public Page<Workspace> getAccessibleWorkspaces(UUID userId, Pageable pageable) {
+        return workspaceRepository.findAccessibleByUser(userId, pageable);
     }
 
     /**

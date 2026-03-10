@@ -10,9 +10,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
-/**
- * Request DTO for creating a new test plan
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -21,9 +18,6 @@ public class CreateTestPlanRequest {
 
     @NotNull(message = "Project ID is required")
     private UUID projectId;
-
-    @NotNull(message = "Created by user ID is required")
-    private UUID createdByUserId;
 
     @NotBlank(message = "Name is required")
     @Size(max = 255, message = "Name must not exceed 255 characters")

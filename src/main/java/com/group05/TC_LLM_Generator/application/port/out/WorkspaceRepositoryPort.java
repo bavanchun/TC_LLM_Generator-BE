@@ -26,6 +26,8 @@ public interface WorkspaceRepositoryPort {
 
     Page<Workspace> findByOwnerUserId(UUID ownerUserId, Pageable pageable);
 
+    Page<Workspace> findAccessibleByUser(UUID userId, Pageable pageable);
+
     void deleteById(UUID workspaceId);
 
     boolean existsById(UUID workspaceId);

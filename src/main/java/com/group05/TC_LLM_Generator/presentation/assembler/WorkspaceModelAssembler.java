@@ -12,9 +12,6 @@ import org.springframework.stereotype.Component;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
-/**
- * HATEOAS assembler for Workspace resources
- */
 @Component
 @RequiredArgsConstructor
 public class WorkspaceModelAssembler implements RepresentationModelAssembler<Workspace, WorkspaceResponse> {
@@ -25,11 +22,10 @@ public class WorkspaceModelAssembler implements RepresentationModelAssembler<Wor
     public WorkspaceResponse toModel(Workspace entity) {
         WorkspaceResponse response = mapper.toResponse(entity);
 
-        // Add HATEOAS links
         response.add(linkTo(methodOn(WorkspaceController.class).getWorkspaceById(entity.getWorkspaceId())).withSelfRel());
-        response.add(linkTo(methodOn(WorkspaceController.class).updateWorkspace(entity.getWorkspaceId(), null)).withRel("update"));
-        response.add(linkTo(methodOn(WorkspaceController.class).deleteWorkspace(entity.getWorkspaceId())).withRel("delete"));
-        response.add(linkTo(methodOn(WorkspaceController.class).getAllWorkspaces(null)).withRel("workspaces"));
+        response.add(linkTo(methodOn(WorkspaceController.class).updateWorkspace(null, entity.getWorkspaceId(), null)).withRel("update"));
+        response.add(linkTo(methodOn(WorkspaceController.class).deleteWorkspace(null, entity.getWorkspaceId())).withRel("delete"));
+        response.add(linkTo(methodOn(WorkspaceController.class).getMyWorkspaces(null, null)).withRel("workspaces"));
 
         return response;
     }
@@ -37,9 +33,7 @@ public class WorkspaceModelAssembler implements RepresentationModelAssembler<Wor
     @Override
     public CollectionModel<WorkspaceResponse> toCollectionModel(Iterable<? extends Workspace> entities) {
         CollectionModel<WorkspaceResponse> collectionModel = RepresentationModelAssembler.super.toCollectionModel(entities);
-
-        collectionModel.add(linkTo(methodOn(WorkspaceController.class).getAllWorkspaces(null)).withSelfRel());
-
+        collectionModel.add(linkTo(methodOn(WorkspaceController.class).getMyWorkspaces(null, null)).withSelfRel());
         return collectionModel;
     }
 }
