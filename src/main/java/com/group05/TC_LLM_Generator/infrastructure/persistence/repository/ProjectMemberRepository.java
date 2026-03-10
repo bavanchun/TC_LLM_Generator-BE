@@ -1,6 +1,8 @@
 package com.group05.TC_LLM_Generator.infrastructure.persistence.repository;
 
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.ProjectMember;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -43,4 +45,6 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, UU
      * @return List of project members with the specified role
      */
     List<ProjectMember> findByProject_ProjectIdAndRole(UUID projectId, String role);
+
+    Page<ProjectMember> findByProject_ProjectId(UUID projectId, Pageable pageable);
 }

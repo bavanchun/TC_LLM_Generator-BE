@@ -1,6 +1,8 @@
 package com.group05.TC_LLM_Generator.infrastructure.persistence.repository;
 
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.UserStory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -20,6 +22,14 @@ public interface UserStoryRepository extends JpaRepository<UserStory, UUID> {
      * @return List of user stories
      */
     List<UserStory> findByProject_ProjectId(UUID projectId);
+
+    /**
+     * Find user stories by project ID with pagination
+     * @param projectId project ID
+     * @param pageable pagination parameters
+     * @return Page of user stories
+     */
+    Page<UserStory> findByProject_ProjectId(UUID projectId, Pageable pageable);
 
     /**
      * Find user story by Jira issue key
