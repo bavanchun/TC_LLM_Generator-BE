@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.group05.TC_LLM_Generator.application.port.in.authen.LoginUseCase;
 import com.group05.TC_LLM_Generator.application.port.in.authen.dto.result.AuthResponse;
@@ -33,6 +34,7 @@ public class LoginService implements LoginUseCase {
     private final WorkspaceService workspaceService;
 
     @Override
+    @Transactional
     public AuthResponse execute(String idTokenString) {
         GoogleUserInfo googleUser = verifyTokenPort.execute(idTokenString);
 

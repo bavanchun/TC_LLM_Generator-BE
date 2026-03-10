@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.group05.TC_LLM_Generator.application.port.in.authen.RegisterUseCase;
 import com.group05.TC_LLM_Generator.application.port.in.authen.dto.request.RegisterRequest;
@@ -33,6 +34,7 @@ public class RegisterService implements RegisterUseCase {
     private final WorkspaceService workspaceService;
 
     @Override
+    @Transactional
     public AuthResponse execute(RegisterRequest request) {
         if (userRepo.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already exists");

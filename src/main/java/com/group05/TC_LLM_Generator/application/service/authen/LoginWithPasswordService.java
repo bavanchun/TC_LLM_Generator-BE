@@ -7,6 +7,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.group05.TC_LLM_Generator.application.port.in.authen.LoginWithPasswordUseCase;
 import com.group05.TC_LLM_Generator.application.port.in.authen.dto.request.LoginRequest;
@@ -34,6 +35,7 @@ public class LoginWithPasswordService implements LoginWithPasswordUseCase {
     private final WorkspaceService workspaceService;
 
     @Override
+    @Transactional
     public AuthResponse execute(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
