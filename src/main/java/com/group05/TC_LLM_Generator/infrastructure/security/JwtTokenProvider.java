@@ -6,8 +6,10 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.text.ParseException;
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class JwtTokenProvider {
@@ -29,6 +31,31 @@ public class JwtTokenProvider {
         return generateToken(data, refreshTokenDuration);
     }
 
+    public String extractJti(String token) {
+        try {
+            return com.nimbusds.jwt.SignedJWT.parse(token).getJWTClaimsSet().getJWTID();
+        } catch (ParseException e) {
+            throw new RuntimeException("Failed to extract jti from token", e);
+        }
+    }
+
+    public JWTClaimsSet extractClaims(String token) {
+        try {
+            com.nimbusds.jwt.SignedJWT signedJWT = com.nimbusds.jwt.SignedJWT.parse(token);
+            com.nimbusds.jose.crypto.MACVerifier verifier = new com.nimbusds.jose.crypto.MACVerifier(signerKey.getBytes());
+            if (!signedJWT.verify(verifier)) {
+                throw new RuntimeException("Invalid token signature");
+            }
+            JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+            if (claims.getExpirationTime() != null && claims.getExpirationTime().before(new Date())) {
+                throw new RuntimeException("Token has expired");
+            }
+            return claims;
+        } catch (JOSEException | ParseException e) {
+            throw new RuntimeException("Failed to verify token", e);
+        }
+    }
+
     private String generateToken(Map<String, String> data, long duration) {
         try {
             // Create HMAC signer
@@ -43,6 +70,7 @@ public class JwtTokenProvider {
             // Prepare JWT with claims set
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                     .subject(userId)
+                    .jwtID(UUID.randomUUID().toString())
                     .claim("email", email)
                     .claim("name", displayName)
                     .issueTime(new Date())

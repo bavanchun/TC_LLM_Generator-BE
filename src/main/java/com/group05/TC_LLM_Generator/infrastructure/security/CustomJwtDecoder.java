@@ -4,6 +4,8 @@ import java.util.Objects;
 
 import javax.crypto.spec.SecretKeySpec;
 
+import com.group05.TC_LLM_Generator.domain.repository.InvalidatedTokenRepo;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -13,10 +15,13 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class CustomJwtDecoder implements JwtDecoder {
 
     @Value("${jwt.secret}")
     private String signerKey;
+
+    private final InvalidatedTokenRepo invalidatedTokenRepo;
 
     private NimbusJwtDecoder nimbusJwtDecoder = null;
 
@@ -35,8 +40,17 @@ public class CustomJwtDecoder implements JwtDecoder {
                         .build();
             }
 
-            return nimbusJwtDecoder.decode(token);
+            Jwt jwt = nimbusJwtDecoder.decode(token);
 
+            String jti = jwt.getId();
+            if (jti != null && invalidatedTokenRepo.existsById(jti)) {
+                throw new JwtException("Token has been revoked");
+            }
+
+            return jwt;
+
+        } catch (JwtException e) {
+            throw e;
         } catch (Exception e) {
             throw new JwtException("JWT decode failed: " + e.getMessage());
         }

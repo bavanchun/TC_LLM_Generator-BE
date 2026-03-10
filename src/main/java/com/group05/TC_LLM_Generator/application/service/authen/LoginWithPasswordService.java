@@ -12,8 +12,10 @@ import com.group05.TC_LLM_Generator.application.port.in.authen.LoginWithPassword
 import com.group05.TC_LLM_Generator.application.port.in.authen.dto.request.LoginRequest;
 import com.group05.TC_LLM_Generator.application.port.in.authen.dto.result.AuthResponse;
 import com.group05.TC_LLM_Generator.domain.model.entity.User;
+import com.group05.TC_LLM_Generator.domain.repository.RefreshTokenRepo;
 import com.group05.TC_LLM_Generator.infrastructure.security.CustomUserDetails;
 import com.group05.TC_LLM_Generator.infrastructure.security.JwtTokenProvider;
+import com.nimbusds.jwt.JWTClaimsSet;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +25,7 @@ public class LoginWithPasswordService implements LoginWithPasswordUseCase {
 
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenRepo refreshTokenRepo;
 
     @Override
     public AuthResponse execute(LoginRequest request) {
@@ -42,6 +45,14 @@ public class LoginWithPasswordService implements LoginWithPasswordUseCase {
 
         String accessToken = jwtTokenProvider.generateAccessToken(data);
         String refreshToken = jwtTokenProvider.generateRefreshToken(data);
+
+        // Store refresh token
+        JWTClaimsSet refreshClaims = jwtTokenProvider.extractClaims(refreshToken);
+        refreshTokenRepo.save(
+                refreshClaims.getJWTID(),
+                user.getId(),
+                refreshClaims.getExpirationTime().toInstant()
+        );
 
         return AuthResponse.builder()
                 .accessToken(accessToken)

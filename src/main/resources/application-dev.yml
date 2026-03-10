@@ -1,7 +1,9 @@
 jwt:
-  secret: ${JWT_SECRET_KEY:i4QWPoQ64kLVJBtvNqun0wO8qQT99A7UZGqWOco_dSzhii7HOc8_Pk5YavXiDJrNOOFdlvUKxwuKIf5YcHjGsg}
-  expiration-accessToken: ${ACCESS_TOKEN_EXPIRE:3600000}
-  expiration-refreshToken: ${REFRESH_TOKEN_EXPIRE:604800000}
+  secret: ${JWT_SECRET_KEY}
+  expiration-accessToken: ${ACCESS_TOKEN_EXPIRE}
+  expiration-refreshToken: ${REFRESH_TOKEN_EXPIRE}
 
 google:
-  client-id: ${GOOGLE_CLIENT_ID:479445555768-ilmv6q2n3r4bk6mmt8d0j09pv1n1ket8.apps.googleusercontent.com}
+  client-id: ${GOOGLE_CLIENT_ID}
+  client-secret: ${GOOGLE_CLIENT_SECRET}
+  redirect-uri: ${GOOGLE_REDIRECT_URI}

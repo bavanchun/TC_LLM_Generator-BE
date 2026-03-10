@@ -10,8 +10,10 @@ import com.group05.TC_LLM_Generator.application.port.in.authen.RegisterUseCase;
 import com.group05.TC_LLM_Generator.application.port.in.authen.dto.request.RegisterRequest;
 import com.group05.TC_LLM_Generator.application.port.in.authen.dto.result.AuthResponse;
 import com.group05.TC_LLM_Generator.domain.model.entity.User;
+import com.group05.TC_LLM_Generator.domain.repository.RefreshTokenRepo;
 import com.group05.TC_LLM_Generator.domain.repository.UserRepo;
 import com.group05.TC_LLM_Generator.infrastructure.security.JwtTokenProvider;
+import com.nimbusds.jwt.JWTClaimsSet;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +24,7 @@ public class RegisterService implements RegisterUseCase {
     private final UserRepo userRepo;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenRepo refreshTokenRepo;
 
     @Override
     public AuthResponse execute(RegisterRequest request) {
@@ -48,6 +51,14 @@ public class RegisterService implements RegisterUseCase {
 
         String accessToken = jwtTokenProvider.generateAccessToken(data);
         String refreshToken = jwtTokenProvider.generateRefreshToken(data);
+
+        // Store refresh token
+        JWTClaimsSet refreshClaims = jwtTokenProvider.extractClaims(refreshToken);
+        refreshTokenRepo.save(
+                refreshClaims.getJWTID(),
+                savedUser.getId(),
+                refreshClaims.getExpirationTime().toInstant()
+        );
 
         return AuthResponse.builder()
                 .accessToken(accessToken)

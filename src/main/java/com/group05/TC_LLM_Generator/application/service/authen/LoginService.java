@@ -10,8 +10,10 @@ import com.group05.TC_LLM_Generator.application.port.in.authen.dto.result.AuthRe
 import com.group05.TC_LLM_Generator.application.port.out.authen.VerifyTokenPort;
 import com.group05.TC_LLM_Generator.application.port.out.authen.dto.info.GoogleUserInfo;
 import com.group05.TC_LLM_Generator.domain.model.entity.User;
+import com.group05.TC_LLM_Generator.domain.repository.RefreshTokenRepo;
 import com.group05.TC_LLM_Generator.domain.repository.UserRepo;
 import com.group05.TC_LLM_Generator.infrastructure.security.JwtTokenProvider;
+import com.nimbusds.jwt.JWTClaimsSet;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +24,7 @@ public class LoginService implements LoginUseCase {
     private final UserRepo userRepo;
     private final JwtTokenProvider jwtTokenProvider;
     private final VerifyTokenPort verifyTokenPort;
+    private final RefreshTokenRepo refreshTokenRepo;
 
     @Override
     public AuthResponse execute(String idTokenString) {
@@ -47,6 +50,14 @@ public class LoginService implements LoginUseCase {
         // 3. Generate Tokens
         String accessToken = jwtTokenProvider.generateAccessToken(data);
         String refreshToken = jwtTokenProvider.generateRefreshToken(data);
+
+        // 4. Store refresh token
+        JWTClaimsSet refreshClaims = jwtTokenProvider.extractClaims(refreshToken);
+        refreshTokenRepo.save(
+                refreshClaims.getJWTID(),
+                user.getId(),
+                refreshClaims.getExpirationTime().toInstant()
+        );
 
         return AuthResponse.builder()
                 .accessToken(accessToken)

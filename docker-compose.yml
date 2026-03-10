@@ -24,18 +24,18 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      # BuildKit optimizations for faster builds
       cache_from:
         - type=local,src=/tmp/.buildx-cache
       cache_to:
         - type=local,dest=/tmp/.buildx-cache,mode=max
     container_name: tc-llm-generator-app
     restart: unless-stopped
-    # environment:
-    #   SPRING_PROFILES_ACTIVE: docker
-    #network_mode: host
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres,dev
     ports:
-        - 8080:8080
+      - 8080:8080
     #depends_on:
     #  postgres:
     #    condition: service_healthy
