@@ -28,4 +28,7 @@ public class UpdateUserRequest {
 
     @Size(max = 50, message = "Status must not exceed 50 characters")
     private String status;
+
+    private String gender;       // "MALE" or "FEMALE"
+    private String dateOfBirth;  // "YYYY-MM-DD" ISO format
 }
