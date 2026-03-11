@@ -13,6 +13,7 @@ import com.group05.TC_LLM_Generator.application.port.out.authen.dto.info.GoogleU
 import com.group05.TC_LLM_Generator.application.service.UserService;
 import com.group05.TC_LLM_Generator.application.service.WorkspaceService;
 import com.group05.TC_LLM_Generator.domain.model.entity.User;
+import com.group05.TC_LLM_Generator.domain.model.enums.Role;
 import com.group05.TC_LLM_Generator.domain.repository.RefreshTokenRepo;
 import com.group05.TC_LLM_Generator.domain.repository.UserRepo;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.UserEntity;
@@ -45,6 +46,7 @@ public class LoginService implements LoginUseCase {
                             .name(googleUser.getName())
                             .provider("GOOGLE")
                             .status("ACTIVE")
+                            .role(Role.USER)
                             .build();
                     return userRepo.save(newUser);
                 });
@@ -55,6 +57,7 @@ public class LoginService implements LoginUseCase {
         data.put("id", user.getId().toString());
         data.put("email", user.getEmail());
         data.put("name", user.getName());
+        data.put("roles", user.getRole().name());
 
         String accessToken = jwtTokenProvider.generateAccessToken(data);
         String refreshToken = jwtTokenProvider.generateRefreshToken(data);

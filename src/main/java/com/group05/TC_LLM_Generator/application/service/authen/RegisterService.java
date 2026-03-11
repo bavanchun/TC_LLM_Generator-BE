@@ -13,6 +13,7 @@ import com.group05.TC_LLM_Generator.application.port.in.authen.dto.result.AuthRe
 import com.group05.TC_LLM_Generator.application.service.UserService;
 import com.group05.TC_LLM_Generator.application.service.WorkspaceService;
 import com.group05.TC_LLM_Generator.domain.model.entity.User;
+import com.group05.TC_LLM_Generator.domain.model.enums.Role;
 import com.group05.TC_LLM_Generator.domain.repository.RefreshTokenRepo;
 import com.group05.TC_LLM_Generator.domain.repository.UserRepo;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.UserEntity;
@@ -46,6 +47,7 @@ public class RegisterService implements RegisterUseCase {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .provider("LOCAL")
                 .status("ACTIVE")
+                .role(Role.USER)
                 .build();
         User savedUser = userRepo.save(newUser);
 
@@ -55,6 +57,7 @@ public class RegisterService implements RegisterUseCase {
         data.put("id", savedUser.getId().toString());
         data.put("email", savedUser.getEmail());
         data.put("name", savedUser.getName());
+        data.put("roles", savedUser.getRole().name());
 
         String accessToken = jwtTokenProvider.generateAccessToken(data);
         String refreshToken = jwtTokenProvider.generateRefreshToken(data);

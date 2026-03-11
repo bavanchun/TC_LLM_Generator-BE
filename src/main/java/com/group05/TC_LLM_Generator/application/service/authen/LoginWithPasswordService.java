@@ -49,6 +49,7 @@ public class LoginWithPasswordService implements LoginWithPasswordUseCase {
         data.put("id", user.getId().toString());
         data.put("email", user.getEmail());
         data.put("name", user.getName());
+        data.put("roles", user.getRole().name());
 
         String accessToken = jwtTokenProvider.generateAccessToken(data);
         String refreshToken = jwtTokenProvider.generateRefreshToken(data);

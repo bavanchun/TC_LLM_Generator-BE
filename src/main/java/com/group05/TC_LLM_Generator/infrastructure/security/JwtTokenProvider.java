@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.text.ParseException;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -67,12 +68,14 @@ public class JwtTokenProvider {
             if (displayName == null || displayName.isEmpty()) {
                 displayName = email.split("@")[0];
             }
-            // Prepare JWT with claims set
+            String role = data.getOrDefault("roles", "USER");
+
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                     .subject(userId)
                     .jwtID(UUID.randomUUID().toString())
                     .claim("email", email)
                     .claim("name", displayName)
+                    .claim("roles", List.of(role))
                     .issueTime(new Date())
                     .expirationTime(new Date(System.currentTimeMillis() + duration))
                     .build();

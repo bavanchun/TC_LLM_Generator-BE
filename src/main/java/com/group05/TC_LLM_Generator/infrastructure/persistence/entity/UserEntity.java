@@ -1,5 +1,6 @@
 package com.group05.TC_LLM_Generator.infrastructure.persistence.entity;
 
+import com.group05.TC_LLM_Generator.domain.model.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -41,6 +42,11 @@ public class UserEntity {
 
     @Column(name = "auth_provider", nullable = false, length = 50)
     private String authProvider; // LOCAL, GOOGLE
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 50)
+    @Builder.Default
+    private Role role = Role.USER;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @CreationTimestamp
