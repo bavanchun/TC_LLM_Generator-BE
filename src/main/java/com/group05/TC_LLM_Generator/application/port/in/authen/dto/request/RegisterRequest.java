@@ -24,4 +24,7 @@ public class RegisterRequest {
 
     @NotBlank(message = "Full name is required")
     private String fullName;
+
+    private String gender;       // "MALE" or "FEMALE"
+    private String dateOfBirth;  // "YYYY-MM-DD" ISO format
 }

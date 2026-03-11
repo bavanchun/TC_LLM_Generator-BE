@@ -27,4 +27,7 @@ public class SignupRequest {
 
     @NotBlank(message = "Confirm password is required")
     private String confirmPassword;
+
+    private String gender;       // "MALE" or "FEMALE"
+    private String dateOfBirth;  // "YYYY-MM-DD" ISO format
 }
