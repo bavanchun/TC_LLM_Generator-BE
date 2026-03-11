@@ -22,6 +22,7 @@ public interface UserPresentationMapper {
      */
     @Mapping(target = "role", expression = "java(entity.getRole() != null ? entity.getRole().name() : null)")
     @Mapping(target = "gender", expression = "java(entity.getGender() != null ? entity.getGender().name() : null)")
+    @Mapping(target = "dateOfBirth", expression = "java(entity.getDateOfBirth() != null ? entity.getDateOfBirth().toString() : null)")
     UserResponse toResponse(UserEntity entity);
 
     /**
@@ -37,6 +38,8 @@ public interface UserPresentationMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "status", constant = "ACTIVE")
     @Mapping(target = "passwordHash", source = "password")
+    @Mapping(target = "gender", expression = "java(request.getGender() != null ? com.group05.TC_LLM_Generator.domain.model.enums.Gender.valueOf(request.getGender()) : null)")
+    @Mapping(target = "dateOfBirth", expression = "java(request.getDateOfBirth() != null ? java.time.LocalDate.parse(request.getDateOfBirth()) : null)")
     UserEntity toEntity(CreateUserRequest request);
 
     /**
@@ -46,5 +49,7 @@ public interface UserPresentationMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "passwordHash", source = "password")
+    @Mapping(target = "gender", expression = "java(request.getGender() != null ? com.group05.TC_LLM_Generator.domain.model.enums.Gender.valueOf(request.getGender()) : null)")
+    @Mapping(target = "dateOfBirth", expression = "java(request.getDateOfBirth() != null ? java.time.LocalDate.parse(request.getDateOfBirth()) : null)")
     void updateEntity(UpdateUserRequest request, @MappingTarget UserEntity entity);
 }
