@@ -1,5 +1,6 @@
 package com.group05.TC_LLM_Generator.domain.model.entity;
 
+import com.group05.TC_LLM_Generator.domain.model.enums.Gender;
 import com.group05.TC_LLM_Generator.domain.model.enums.Role;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,4 +21,5 @@ public class User {
     private String provider;
     private String status;
     private Role role;
+    private Gender gender;
 }

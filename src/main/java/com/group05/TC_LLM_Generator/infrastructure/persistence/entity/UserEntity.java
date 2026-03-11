@@ -1,5 +1,6 @@
 package com.group05.TC_LLM_Generator.infrastructure.persistence.entity;
 
+import com.group05.TC_LLM_Generator.domain.model.enums.Gender;
 import com.group05.TC_LLM_Generator.domain.model.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
@@ -47,6 +48,10 @@ public class UserEntity {
     @Column(name = "role", nullable = false, length = 50)
     @Builder.Default
     private Role role = Role.USER;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender", length = 10)
+    private Gender gender;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @CreationTimestamp
