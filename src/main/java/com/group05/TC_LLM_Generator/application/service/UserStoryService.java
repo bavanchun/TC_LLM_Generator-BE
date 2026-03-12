@@ -4,6 +4,7 @@ import com.group05.TC_LLM_Generator.application.port.out.UserStoryRepositoryPort
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.AcceptanceCriteria;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.UserStory;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,10 @@ public class UserStoryService {
 
         UserStory saved = userStoryRepository.save(userStory);
 
+        // Initialize lazy associations within the transaction (open-in-view: false)
+        Hibernate.initialize(saved.getProject());
+        Hibernate.initialize(saved.getAcceptanceCriteria());
+
         eventPublisher.publishEvent(new EntityChangedEvent(
                 this, EntityType.STORY, Action.CREATED,
                 saved.getUserStoryId().toString(),
@@ -68,7 +73,13 @@ public class UserStoryService {
      * Get user story by ID
      */
     public Optional<UserStory> getUserStoryById(UUID userStoryId) {
-        return userStoryRepository.findById(userStoryId);
+        Optional<UserStory> opt = userStoryRepository.findById(userStoryId);
+        // Initialize lazy associations within the transaction (open-in-view: false)
+        opt.ifPresent(story -> {
+            Hibernate.initialize(story.getProject());
+            Hibernate.initialize(story.getAcceptanceCriteria());
+        });
+        return opt;
     }
 
     /**
@@ -138,6 +149,10 @@ public class UserStoryService {
         }
 
         UserStory saved = userStoryRepository.save(existing);
+
+        // Initialize lazy associations within the transaction (open-in-view: false)
+        Hibernate.initialize(saved.getProject());
+        Hibernate.initialize(saved.getAcceptanceCriteria());
 
         eventPublisher.publishEvent(new EntityChangedEvent(
                 this, EntityType.STORY, Action.UPDATED,
