@@ -22,6 +22,5 @@ public class CreateAcceptanceCriteriaRequest {
     @NotNull(message = "Order number is required")
     private Integer orderNo;
 
-    @Builder.Default
     private Boolean completed = false;
 }

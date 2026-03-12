@@ -35,6 +35,7 @@ public interface AcceptanceCriteriaPresentationMapper {
     @Mapping(target = "userStory", ignore = true)
     @Mapping(target = "parentAcceptanceCriteria", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "completed", defaultExpression = "java(Boolean.FALSE)")
     AcceptanceCriteria toEntity(CreateAcceptanceCriteriaRequest request);
 
     /**

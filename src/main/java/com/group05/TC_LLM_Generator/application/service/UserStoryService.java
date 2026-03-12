@@ -93,7 +93,12 @@ public class UserStoryService {
      * Get all user stories with pagination
      */
     public Page<UserStory> getAllUserStories(Pageable pageable) {
-        return userStoryRepository.findAll(pageable);
+        Page<UserStory> page = userStoryRepository.findAll(pageable);
+        page.forEach(story -> {
+            Hibernate.initialize(story.getProject());
+            Hibernate.initialize(story.getAcceptanceCriteria());
+        });
+        return page;
     }
 
     /**
@@ -107,7 +112,12 @@ public class UserStoryService {
      * Get user stories by project ID with pagination
      */
     public Page<UserStory> getUserStoriesByProject(UUID projectId, Pageable pageable) {
-        return userStoryRepository.findByProjectId(projectId, pageable);
+        Page<UserStory> page = userStoryRepository.findByProjectId(projectId, pageable);
+        page.forEach(story -> {
+            Hibernate.initialize(story.getProject());
+            Hibernate.initialize(story.getAcceptanceCriteria());
+        });
+        return page;
     }
 
     /**
