@@ -1,5 +1,7 @@
 package com.group05.TC_LLM_Generator.presentation.dto.request;
 
+import com.group05.TC_LLM_Generator.domain.model.enums.StoryStatus;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -8,6 +10,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -28,7 +32,17 @@ public class CreateUserStoryRequest {
 
     private String description;
 
-    @NotBlank(message = "Status is required")
-    @Size(max = 50, message = "Status must not exceed 50 characters")
-    private String status;
+    @Size(max = 500, message = "As a must not exceed 500 characters")
+    private String asA;
+
+    private String iWantTo;
+
+    private String soThat;
+
+    @NotNull(message = "Status is required")
+    private StoryStatus status;
+
+    @Valid
+    @Builder.Default
+    private List<CreateAcceptanceCriteriaRequest> acceptanceCriteria = new ArrayList<>();
 }

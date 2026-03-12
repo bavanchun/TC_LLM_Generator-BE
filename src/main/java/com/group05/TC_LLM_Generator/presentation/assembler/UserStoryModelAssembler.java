@@ -1,6 +1,7 @@
 package com.group05.TC_LLM_Generator.presentation.assembler;
 
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.UserStory;
+import com.group05.TC_LLM_Generator.presentation.controller.AcceptanceCriteriaController;
 import com.group05.TC_LLM_Generator.presentation.controller.UserStoryController;
 import com.group05.TC_LLM_Generator.presentation.dto.response.UserStoryResponse;
 import com.group05.TC_LLM_Generator.presentation.mapper.UserStoryPresentationMapper;
@@ -29,6 +30,7 @@ public class UserStoryModelAssembler implements RepresentationModelAssembler<Use
         response.add(linkTo(methodOn(UserStoryController.class).updateUserStory(entity.getUserStoryId(), null, null)).withRel("update"));
         response.add(linkTo(methodOn(UserStoryController.class).deleteUserStory(entity.getUserStoryId(), null)).withRel("delete"));
         response.add(linkTo(methodOn(UserStoryController.class).getAllUserStories(null)).withRel("userStories"));
+        response.add(linkTo(methodOn(AcceptanceCriteriaController.class).getAcceptanceCriteriaByUserStory(entity.getUserStoryId())).withRel("acceptanceCriteria"));
 
         return response;
     }

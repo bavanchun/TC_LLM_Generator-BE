@@ -2,6 +2,7 @@ package com.group05.TC_LLM_Generator.presentation.controller;
 
 import com.group05.TC_LLM_Generator.application.service.ProjectService;
 import com.group05.TC_LLM_Generator.application.service.UserStoryService;
+import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.AcceptanceCriteria;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.Project;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.UserStory;
 import com.group05.TC_LLM_Generator.presentation.assembler.UserStoryModelAssembler;
@@ -10,6 +11,7 @@ import com.group05.TC_LLM_Generator.presentation.dto.request.CreateUserStoryRequ
 import com.group05.TC_LLM_Generator.presentation.dto.request.UpdateUserStoryRequest;
 import com.group05.TC_LLM_Generator.presentation.dto.response.UserStoryResponse;
 import com.group05.TC_LLM_Generator.presentation.exception.ResourceNotFoundException;
+import com.group05.TC_LLM_Generator.presentation.mapper.AcceptanceCriteriaPresentationMapper;
 import com.group05.TC_LLM_Generator.presentation.mapper.UserStoryPresentationMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -39,11 +42,12 @@ public class UserStoryController {
     private final UserStoryService userStoryService;
     private final ProjectService projectService;
     private final UserStoryPresentationMapper mapper;
+    private final AcceptanceCriteriaPresentationMapper acMapper;
     private final UserStoryModelAssembler assembler;
     private final PagedResourcesAssembler<UserStory> pagedResourcesAssembler;
 
     /**
-     * Create a new user story
+     * Create a new user story (with optional acceptance criteria in a single request)
      * POST /api/v1/user-stories
      */
     @PostMapping
@@ -58,7 +62,14 @@ public class UserStoryController {
 
         UserStory userStory = mapper.toEntity(request);
         userStory.setProject(project);
-        UserStory savedUserStory = userStoryService.createUserStory(userStory, currentUserId);
+
+        // Map AC request DTOs to entities
+        List<AcceptanceCriteria> acList = null;
+        if (request.getAcceptanceCriteria() != null && !request.getAcceptanceCriteria().isEmpty()) {
+            acList = acMapper.toEntityList(request.getAcceptanceCriteria());
+        }
+
+        UserStory savedUserStory = userStoryService.createUserStory(userStory, acList, currentUserId);
         UserStoryResponse response = assembler.toModel(savedUserStory);
 
         return ResponseEntity
@@ -95,7 +106,7 @@ public class UserStoryController {
     }
 
     /**
-     * Update user story by ID
+     * Update user story by ID (with optional AC replacement)
      * PUT /api/v1/user-stories/{id}
      */
     @PutMapping("/{id}")
@@ -110,7 +121,14 @@ public class UserStoryController {
                 .orElseThrow(() -> new ResourceNotFoundException("UserStory", "id", id));
 
         mapper.updateEntity(request, existingUserStory);
-        UserStory updatedUserStory = userStoryService.updateUserStory(id, existingUserStory, currentUserId);
+
+        // Map AC request DTOs to entities if provided
+        List<AcceptanceCriteria> acList = null;
+        if (request.getAcceptanceCriteria() != null) {
+            acList = acMapper.toEntityList(request.getAcceptanceCriteria());
+        }
+
+        UserStory updatedUserStory = userStoryService.updateUserStory(id, existingUserStory, acList, currentUserId);
         UserStoryResponse response = assembler.toModel(updatedUserStory);
 
         return ResponseEntity.ok(ApiResponse.success(response, "User story updated successfully"));

@@ -3,9 +3,6 @@ package com.group05.TC_LLM_Generator.infrastructure.persistence.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -40,6 +37,10 @@ public class AcceptanceCriteria {
 
     @Column(name = "order_no", nullable = false)
     private Integer orderNo;
+
+    @Column(name = "completed", nullable = false)
+    @Builder.Default
+    private Boolean completed = false;
 
     @Column(name = "created_at", nullable = false)
     @CreationTimestamp

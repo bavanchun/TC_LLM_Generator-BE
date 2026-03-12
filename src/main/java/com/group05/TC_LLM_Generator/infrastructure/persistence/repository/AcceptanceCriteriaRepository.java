@@ -21,9 +21,15 @@ public interface AcceptanceCriteriaRepository extends JpaRepository<AcceptanceCr
     List<AcceptanceCriteria> findByUserStory_UserStoryId(UUID userStoryId);
 
     /**
-     * Find acceptance criteria by user story ID ordered by created date
+     * Find acceptance criteria by user story ID ordered by order number
      * @param userStoryId user story ID
-     * @return List of acceptance criteria ordered by creation date
+     * @return List of acceptance criteria ordered by orderNo
      */
-    List<AcceptanceCriteria> findByUserStory_UserStoryIdOrderByCreatedAtAsc(UUID userStoryId);
+    List<AcceptanceCriteria> findByUserStory_UserStoryIdOrderByOrderNoAsc(UUID userStoryId);
+
+    /**
+     * Delete all acceptance criteria for a user story
+     * @param userStoryId user story ID
+     */
+    void deleteByUserStory_UserStoryId(UUID userStoryId);
 }

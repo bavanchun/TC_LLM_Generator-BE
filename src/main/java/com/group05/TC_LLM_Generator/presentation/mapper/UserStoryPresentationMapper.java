@@ -4,6 +4,7 @@ import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.UserStory;
 import com.group05.TC_LLM_Generator.presentation.dto.request.CreateUserStoryRequest;
 import com.group05.TC_LLM_Generator.presentation.dto.request.UpdateUserStoryRequest;
 import com.group05.TC_LLM_Generator.presentation.dto.response.UserStoryResponse;
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -14,7 +15,9 @@ import java.util.List;
 /**
  * MapStruct mapper for UserStory presentation layer
  */
-@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+@Mapper(componentModel = "spring",
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
+        uses = {AcceptanceCriteriaPresentationMapper.class})
 public interface UserStoryPresentationMapper {
 
     /**
@@ -22,6 +25,8 @@ public interface UserStoryPresentationMapper {
      */
     @Mapping(target = "projectId", source = "project.projectId")
     @Mapping(target = "projectName", source = "project.name")
+    @Mapping(target = "acceptanceCriteria", source = "acceptanceCriteria")
+    @Mapping(target = "iWantTo", source = "IWantTo")
     UserStoryResponse toResponse(UserStory entity);
 
     /**
@@ -37,6 +42,8 @@ public interface UserStoryPresentationMapper {
     @Mapping(target = "jiraIssueKey", ignore = true)
     @Mapping(target = "jiraIssueId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "acceptanceCriteria", ignore = true)
+    @Mapping(target = "iWantTo", source = "IWantTo")
     UserStory toEntity(CreateUserStoryRequest request);
 
     /**
@@ -47,5 +54,16 @@ public interface UserStoryPresentationMapper {
     @Mapping(target = "jiraIssueKey", ignore = true)
     @Mapping(target = "jiraIssueId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "acceptanceCriteria", ignore = true)
     void updateEntity(UpdateUserStoryRequest request, @MappingTarget UserStory entity);
+
+    /**
+     * Handle iWantTo field mapping after main mapping (JavaBeans naming convention workaround)
+     */
+    @AfterMapping
+    default void mapIWantTo(UpdateUserStoryRequest request, @MappingTarget UserStory entity) {
+        if (request.getIWantTo() != null) {
+            entity.setIWantTo(request.getIWantTo());
+        }
+    }
 }
