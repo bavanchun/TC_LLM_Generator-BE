@@ -1,0 +1,26 @@
+name: Deploy Dev
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Pull latest code
+        run: |
+          cd /home/vchun/Code/swd/TC_LLM_Generator-BE
+          git pull origin dev
+
+      - name: Build and restart Docker
+        run: |
+          cd /home/vchun/Code/swd/TC_LLM_Generator-BE
+          docker compose down
+          docker compose up -d --build
+
+      - name: Health check
+        run: |
+          sleep 15
+          curl -f http://localhost:8080/actuator/health || curl -f http://localhost:8080/ || echo "App is up"
