@@ -1,8 +1,12 @@
 package com.group05.TC_LLM_Generator.application.service;
 
 import com.group05.TC_LLM_Generator.application.port.out.ProjectRepositoryPort;
+import com.group05.TC_LLM_Generator.domain.event.EntityChangedEvent;
+import com.group05.TC_LLM_Generator.domain.event.EntityChangedEvent.Action;
+import com.group05.TC_LLM_Generator.domain.event.EntityChangedEvent.EntityType;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.Project;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,6 +26,7 @@ import java.util.UUID;
 public class ProjectService {
 
     private final ProjectRepositoryPort projectRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Create a new project
@@ -31,7 +36,18 @@ public class ProjectService {
         if (projectRepository.existsByProjectKey(project.getProjectKey())) {
             throw new IllegalArgumentException("Project key already exists: " + project.getProjectKey());
         }
-        return projectRepository.save(project);
+        
+        Project saved = projectRepository.save(project);
+        
+        eventPublisher.publishEvent(new EntityChangedEvent(
+                this, EntityType.PROJECT, Action.CREATED,
+                saved.getProjectId().toString(),
+                saved.getWorkspace().getWorkspaceId().toString(), // parentId is workspaceId
+                null, // payload
+                saved.getCreatedByUser().getUserId().toString() // performedBy
+        ));
+        
+        return saved;
     }
 
     /**
@@ -95,7 +111,7 @@ public class ProjectService {
      * Update project
      */
     @Transactional
-    public Project updateProject(UUID projectId, Project updatedProject) {
+    public Project updateProject(UUID projectId, Project updatedProject, String performedByUserId) {
         Project existingProject = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
 
@@ -120,18 +136,38 @@ public class ProjectService {
             existingProject.setJiraProjectKey(updatedProject.getJiraProjectKey());
         }
 
-        return projectRepository.save(existingProject);
+        Project saved = projectRepository.save(existingProject);
+        
+        eventPublisher.publishEvent(new EntityChangedEvent(
+                this, EntityType.PROJECT, Action.UPDATED,
+                saved.getProjectId().toString(),
+                saved.getWorkspace().getWorkspaceId().toString(),
+                null,
+                performedByUserId
+        ));
+        
+        return saved;
     }
 
     /**
      * Delete project by ID
      */
     @Transactional
-    public void deleteProject(UUID projectId) {
-        if (!projectRepository.existsById(projectId)) {
-            throw new IllegalArgumentException("Project not found: " + projectId);
-        }
+    public void deleteProject(UUID projectId, String performedByUserId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
+                
+        String workspaceId = project.getWorkspace().getWorkspaceId().toString();
+        
         projectRepository.deleteById(projectId);
+        
+        eventPublisher.publishEvent(new EntityChangedEvent(
+                this, EntityType.PROJECT, Action.DELETED,
+                projectId.toString(),
+                workspaceId,
+                null,
+                performedByUserId
+        ));
     }
 
     /**

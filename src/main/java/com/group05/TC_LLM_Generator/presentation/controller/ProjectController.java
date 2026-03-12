@@ -119,7 +119,7 @@ public class ProjectController {
         }
 
         mapper.updateEntity(request, existingProject);
-        Project updatedProject = projectService.updateProject(id, existingProject);
+        Project updatedProject = projectService.updateProject(id, existingProject, currentUserId.toString());
         ProjectResponse response = assembler.toModel(updatedProject);
 
         return ResponseEntity.ok(ApiResponse.success(response, "Project updated successfully"));
@@ -139,7 +139,7 @@ public class ProjectController {
                     .body(ApiResponse.error("Only the project creator can delete this project"));
         }
 
-        projectService.deleteProject(id);
+        projectService.deleteProject(id, currentUserId.toString());
         return ResponseEntity.ok(ApiResponse.success("Project deleted successfully"));
     }
 

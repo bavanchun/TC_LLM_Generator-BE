@@ -1,8 +1,12 @@
 package com.group05.TC_LLM_Generator.application.service;
 
 import com.group05.TC_LLM_Generator.application.port.out.WorkspaceRepositoryPort;
+import com.group05.TC_LLM_Generator.domain.event.EntityChangedEvent;
+import com.group05.TC_LLM_Generator.domain.event.EntityChangedEvent.Action;
+import com.group05.TC_LLM_Generator.domain.event.EntityChangedEvent.EntityType;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.Workspace;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,13 +26,24 @@ import java.util.UUID;
 public class WorkspaceService {
 
     private final WorkspaceRepositoryPort workspaceRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Create a new workspace
      */
     @Transactional
     public Workspace createWorkspace(Workspace workspace) {
-        return workspaceRepository.save(workspace);
+        Workspace saved = workspaceRepository.save(workspace);
+
+        eventPublisher.publishEvent(new EntityChangedEvent(
+                this, EntityType.WORKSPACE, Action.CREATED,
+                saved.getWorkspaceId().toString(),
+                null,  // top-level entity, no parent
+                null,  // payload resolved by controller/assembler if needed
+                saved.getOwnerUser().getUserId().toString()
+        ));
+
+        return saved;
     }
 
     /**
@@ -88,18 +103,36 @@ public class WorkspaceService {
             existingWorkspace.setDescription(updatedWorkspace.getDescription());
         }
 
-        return workspaceRepository.save(existingWorkspace);
+        Workspace saved = workspaceRepository.save(existingWorkspace);
+
+        eventPublisher.publishEvent(new EntityChangedEvent(
+                this, EntityType.WORKSPACE, Action.UPDATED,
+                saved.getWorkspaceId().toString(),
+                null,
+                null,
+                saved.getOwnerUser().getUserId().toString()
+        ));
+
+        return saved;
     }
 
     /**
      * Delete workspace by ID
      */
     @Transactional
-    public void deleteWorkspace(UUID workspaceId) {
+    public void deleteWorkspace(UUID workspaceId, String performedByUserId) {
         if (!workspaceRepository.existsById(workspaceId)) {
             throw new IllegalArgumentException("Workspace not found: " + workspaceId);
         }
         workspaceRepository.deleteById(workspaceId);
+
+        eventPublisher.publishEvent(new EntityChangedEvent(
+                this, EntityType.WORKSPACE, Action.DELETED,
+                workspaceId.toString(),
+                null,
+                null,
+                performedByUserId
+        ));
     }
 
     /**
