@@ -25,4 +25,8 @@ public class WorkspaceResponse extends RepresentationModel<WorkspaceResponse> {
     private String description;
     private Instant createdAt;
     private Instant updatedAt;
+
+    // Computed stats
+    private long projectCount;
+    private long memberCount;
 }

@@ -21,6 +21,8 @@ public interface WorkspacePresentationMapper {
      */
     @Mapping(target = "ownerUserId", source = "ownerUser.userId")
     @Mapping(target = "ownerFullName", source = "ownerUser.fullName")
+    @Mapping(target = "projectCount", ignore = true)
+    @Mapping(target = "memberCount", ignore = true)
     WorkspaceResponse toResponse(Workspace entity);
 
     /**

@@ -1,6 +1,8 @@
 package com.group05.TC_LLM_Generator.presentation.assembler;
 
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.Workspace;
+import com.group05.TC_LLM_Generator.infrastructure.persistence.repository.ProjectRepository;
+import com.group05.TC_LLM_Generator.infrastructure.persistence.repository.WorkspaceMemberRepository;
 import com.group05.TC_LLM_Generator.presentation.controller.WorkspaceController;
 import com.group05.TC_LLM_Generator.presentation.dto.response.WorkspaceResponse;
 import com.group05.TC_LLM_Generator.presentation.mapper.WorkspacePresentationMapper;
@@ -17,10 +19,16 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class WorkspaceModelAssembler implements RepresentationModelAssembler<Workspace, WorkspaceResponse> {
 
     private final WorkspacePresentationMapper mapper;
+    private final ProjectRepository projectRepository;
+    private final WorkspaceMemberRepository workspaceMemberRepository;
 
     @Override
     public WorkspaceResponse toModel(Workspace entity) {
         WorkspaceResponse response = mapper.toResponse(entity);
+
+        // Compute stats
+        response.setProjectCount(projectRepository.countByWorkspace_WorkspaceId(entity.getWorkspaceId()));
+        response.setMemberCount(workspaceMemberRepository.countByWorkspace_WorkspaceId(entity.getWorkspaceId()));
 
         response.add(linkTo(methodOn(WorkspaceController.class).getWorkspaceById(entity.getWorkspaceId())).withSelfRel());
         response.add(linkTo(methodOn(WorkspaceController.class).updateWorkspace(null, entity.getWorkspaceId(), null)).withRel("update"));

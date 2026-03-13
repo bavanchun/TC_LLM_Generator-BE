@@ -43,4 +43,11 @@ public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember
      * @return List of workspace members with the specified role
      */
     List<WorkspaceMember> findByWorkspace_WorkspaceIdAndRole(UUID workspaceId, String role);
+
+    /**
+     * Count members in a workspace
+     * @param workspaceId workspace ID
+     * @return number of members
+     */
+    long countByWorkspace_WorkspaceId(UUID workspaceId);
 }
