@@ -5,6 +5,7 @@ import com.group05.TC_LLM_Generator.domain.event.EntityChangedEvent;
 import com.group05.TC_LLM_Generator.domain.event.EntityChangedEvent.Action;
 import com.group05.TC_LLM_Generator.domain.event.EntityChangedEvent.EntityType;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.Workspace;
+import com.group05.TC_LLM_Generator.infrastructure.persistence.repository.WorkspaceMemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -26,6 +27,7 @@ import java.util.UUID;
 public class WorkspaceService {
 
     private final WorkspaceRepositoryPort workspaceRepository;
+    private final WorkspaceMemberRepository workspaceMemberRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
@@ -140,5 +142,21 @@ public class WorkspaceService {
      */
     public boolean workspaceExists(UUID workspaceId) {
         return workspaceRepository.existsById(workspaceId);
+    }
+
+    /**
+     * Check if user is a member or owner of the workspace
+     * @param workspaceId workspace ID
+     * @param userId user ID
+     * @return true if user is owner or member
+     */
+    public boolean isMemberOrOwner(UUID workspaceId, UUID userId) {
+        Optional<Workspace> ws = workspaceRepository.findById(workspaceId);
+        if (ws.isPresent() && ws.get().getOwnerUser().getUserId().equals(userId)) {
+            return true;
+        }
+        return workspaceMemberRepository
+                .findByWorkspace_WorkspaceIdAndUser_UserId(workspaceId, userId)
+                .isPresent();
     }
 }

@@ -145,8 +145,17 @@ public class ProjectController {
 
     @GetMapping("/workspace/{workspaceId}")
     public ResponseEntity<ApiResponse<PagedModel<ProjectResponse>>> getProjectsByWorkspace(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable("workspaceId") UUID workspaceId,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+
+        // Security: verify user is owner or member of this workspace
+        if (!workspaceService.isMemberOrOwner(workspaceId, currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("You do not have access to this workspace"));
+        }
 
         Page<Project> page = projectService.getProjectsByWorkspace(workspaceId, pageable);
         PagedModel<ProjectResponse> pagedModel = pagedResourcesAssembler.toModel(page, assembler);
