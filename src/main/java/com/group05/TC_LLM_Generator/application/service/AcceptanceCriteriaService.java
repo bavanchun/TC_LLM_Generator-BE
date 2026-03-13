@@ -3,6 +3,7 @@ package com.group05.TC_LLM_Generator.application.service;
 import com.group05.TC_LLM_Generator.application.port.out.AcceptanceCriteriaRepositoryPort;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.AcceptanceCriteria;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +43,15 @@ public class AcceptanceCriteriaService {
      */
     public Optional<AcceptanceCriteria> getAcceptanceCriteriaById(UUID acceptanceCriteriaId) {
         return acceptanceCriteriaRepository.findById(acceptanceCriteriaId);
+    }
+
+    /**
+     * Get acceptance criteria by ID with UserStory initialized (to resolve story from AC)
+     */
+    public Optional<AcceptanceCriteria> getAcceptanceCriteriaWithUserStory(UUID acceptanceCriteriaId) {
+        Optional<AcceptanceCriteria> opt = acceptanceCriteriaRepository.findById(acceptanceCriteriaId);
+        opt.ifPresent(ac -> Hibernate.initialize(ac.getUserStory()));
+        return opt;
     }
 
     /**

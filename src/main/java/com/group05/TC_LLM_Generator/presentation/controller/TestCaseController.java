@@ -43,20 +43,40 @@ public class TestCaseController {
     public ResponseEntity<ApiResponse<TestCaseResponse>> createTestCase(
             @Valid @RequestBody CreateTestCaseRequest request) {
 
-        TestCase testCase = mapper.toEntity(request);
-
-        // Resolve UserStory reference
-        if (request.getUserStoryId() != null) {
-            UserStory userStory = userStoryService.getUserStoryById(request.getUserStoryId())
-                    .orElseThrow(() -> new ResourceNotFoundException("UserStory", "id", request.getUserStoryId()));
-            testCase.setUserStory(userStory);
+        // Enforce: must provide userStoryId or acceptanceCriteriaId
+        if (request.getUserStoryId() == null && request.getAcceptanceCriteriaId() == null) {
+            throw new IllegalArgumentException(
+                    "Must provide at least userStoryId or acceptanceCriteriaId to link test case to a user story");
         }
 
-        // Resolve AcceptanceCriteria reference
+        TestCase testCase = mapper.toEntity(request);
+
         if (request.getAcceptanceCriteriaId() != null) {
-            AcceptanceCriteria ac = acceptanceCriteriaService.getAcceptanceCriteriaById(request.getAcceptanceCriteriaId())
-                    .orElseThrow(() -> new ResourceNotFoundException("AcceptanceCriteria", "id", request.getAcceptanceCriteriaId()));
+            // Load AC with its UserStory (lazy init inside service)
+            AcceptanceCriteria ac = acceptanceCriteriaService.getAcceptanceCriteriaWithUserStory(
+                            request.getAcceptanceCriteriaId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "AcceptanceCriteria", "id", request.getAcceptanceCriteriaId()));
             testCase.setAcceptanceCriteria(ac);
+
+            if (request.getUserStoryId() != null) {
+                // Both provided — validate AC belongs to the given story
+                if (!ac.getUserStory().getUserStoryId().equals(request.getUserStoryId())) {
+                    throw new IllegalArgumentException(
+                            "AcceptanceCriteria " + request.getAcceptanceCriteriaId()
+                            + " does not belong to UserStory " + request.getUserStoryId());
+                }
+                testCase.setUserStory(ac.getUserStory());
+            } else {
+                // Only AC provided — auto-resolve UserStory from AC
+                testCase.setUserStory(ac.getUserStory());
+            }
+        } else {
+            // Only userStoryId provided
+            UserStory userStory = userStoryService.getUserStoryById(request.getUserStoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "UserStory", "id", request.getUserStoryId()));
+            testCase.setUserStory(userStory);
         }
 
         TestCase savedTestCase = testCaseService.createTestCase(testCase);
