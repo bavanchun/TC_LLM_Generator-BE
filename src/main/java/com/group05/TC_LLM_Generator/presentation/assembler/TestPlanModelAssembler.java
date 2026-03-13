@@ -27,8 +27,8 @@ public class TestPlanModelAssembler implements RepresentationModelAssembler<Test
 
         // Add HATEOAS links
         response.add(linkTo(methodOn(TestPlanController.class).getTestPlanById(entity.getTestPlanId())).withSelfRel());
-        response.add(linkTo(methodOn(TestPlanController.class).updateTestPlan(entity.getTestPlanId(), null)).withRel("update"));
-        response.add(linkTo(methodOn(TestPlanController.class).deleteTestPlan(entity.getTestPlanId())).withRel("delete"));
+        response.add(linkTo(methodOn(TestPlanController.class).updateTestPlan(null, entity.getTestPlanId(), null)).withRel("update"));
+        response.add(linkTo(methodOn(TestPlanController.class).deleteTestPlan(null, entity.getTestPlanId())).withRel("delete"));
         response.add(linkTo(methodOn(TestPlanController.class).getAllTestPlans(null)).withRel("testPlans"));
 
         return response;

@@ -1,7 +1,9 @@
 package com.group05.TC_LLM_Generator.infrastructure.persistence.adapter;
 
 import com.group05.TC_LLM_Generator.application.port.out.TestPlanRepositoryPort;
+import com.group05.TC_LLM_Generator.domain.model.enums.TestPlanStatus;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.TestPlan;
+import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.UserStory;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.repository.TestPlanRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -49,6 +51,16 @@ public class TestPlanRepositoryAdapter implements TestPlanRepositoryPort {
     @Override
     public Page<TestPlan> findByProjectId(UUID projectId, Pageable pageable) {
         return jpaRepository.findByProject_ProjectId(projectId, pageable);
+    }
+
+    @Override
+    public Page<TestPlan> findByProjectIdAndStatus(UUID projectId, TestPlanStatus status, Pageable pageable) {
+        return jpaRepository.findByProject_ProjectIdAndStatus(projectId, status, pageable);
+    }
+
+    @Override
+    public Page<UserStory> findStoriesByTestPlanId(UUID testPlanId, Pageable pageable) {
+        return jpaRepository.findStoriesByTestPlanId(testPlanId, pageable);
     }
 
     @Override

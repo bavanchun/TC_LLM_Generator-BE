@@ -1,13 +1,14 @@
 package com.group05.TC_LLM_Generator.infrastructure.persistence.entity;
 
+import com.group05.TC_LLM_Generator.domain.model.enums.TestPlanStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -41,11 +42,25 @@ public class TestPlan {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 50)
-    private String status;
+    private TestPlanStatus status;
 
-    @Column(name = "created_at", nullable = false)
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "test_plan_stories",
+            joinColumns = @JoinColumn(name = "test_plan_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_story_id")
+    )
+    @Builder.Default
+    private List<UserStory> userStories = new ArrayList<>();
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     @CreationTimestamp
     private Instant createdAt;
+
+    @Column(name = "updated_at")
+    @UpdateTimestamp
+    private Instant updatedAt;
 
 }

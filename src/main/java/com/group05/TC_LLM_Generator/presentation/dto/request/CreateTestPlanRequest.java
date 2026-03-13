@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -25,7 +26,9 @@ public class CreateTestPlanRequest {
 
     private String description;
 
-    @NotBlank(message = "Status is required")
-    @Size(max = 50, message = "Status must not exceed 50 characters")
+    /** Optional — defaults to DRAFT if not provided */
     private String status;
+
+    /** Optional — list of user story IDs to include in this test plan */
+    private List<UUID> storyIds;
 }

@@ -1,6 +1,8 @@
 package com.group05.TC_LLM_Generator.application.port.out;
 
+import com.group05.TC_LLM_Generator.domain.model.enums.TestPlanStatus;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.TestPlan;
+import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.UserStory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -25,6 +27,10 @@ public interface TestPlanRepositoryPort {
     List<TestPlan> findByProjectId(UUID projectId);
 
     Page<TestPlan> findByProjectId(UUID projectId, Pageable pageable);
+
+    Page<TestPlan> findByProjectIdAndStatus(UUID projectId, TestPlanStatus status, Pageable pageable);
+
+    Page<UserStory> findStoriesByTestPlanId(UUID testPlanId, Pageable pageable);
 
     void deleteById(UUID testPlanId);
 

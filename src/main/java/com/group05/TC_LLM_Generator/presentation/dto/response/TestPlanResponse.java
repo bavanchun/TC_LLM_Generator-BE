@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.hateoas.RepresentationModel;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -25,5 +26,7 @@ public class TestPlanResponse extends RepresentationModel<TestPlanResponse> {
     private String name;
     private String description;
     private String status;
+    private List<UUID> storyIds;
     private Instant createdAt;
+    private Instant updatedAt;
 }

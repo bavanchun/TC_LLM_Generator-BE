@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+import java.util.UUID;
+
 /**
  * Request DTO for updating an existing test plan
  */
@@ -20,6 +23,8 @@ public class UpdateTestPlanRequest {
 
     private String description;
 
-    @Size(max = 50, message = "Status must not exceed 50 characters")
     private String status;
+
+    /** Optional — replace the linked user stories */
+    private List<UUID> storyIds;
 }
