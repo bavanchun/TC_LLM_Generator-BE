@@ -3,6 +3,7 @@ package com.group05.TC_LLM_Generator.application.service;
 import com.group05.TC_LLM_Generator.application.port.out.TestCaseRepositoryPort;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.TestCase;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -144,7 +145,15 @@ public class TestCaseService {
             existingTestCase.setCustomFieldsJson(updatedTestCase.getCustomFieldsJson());
         }
 
-        return testCaseRepository.save(existingTestCase);
+        TestCase saved = testCaseRepository.save(existingTestCase);
+
+        // Eagerly initialize lazy relations so the HATEOAS assembler
+        // can access them after the transaction boundary closes
+        Hibernate.initialize(saved.getUserStory());
+        Hibernate.initialize(saved.getAcceptanceCriteria());
+        Hibernate.initialize(saved.getTestCaseType());
+
+        return saved;
     }
 
     /**
