@@ -5,7 +5,7 @@
 # ============================================
 
 # Stage 1: Build stage with cached Maven dependencies
-FROM maven:3.9.9-eclipse-temurin-21-alpine AS build
+FROM maven:3.9-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
@@ -24,7 +24,14 @@ COPY src ./src
 RUN --mount=type=cache,target=/root/.m2 \
     mvn clean package -DskipTests -B -q -T 1C
 
-# Stage 2: Minimal runtime image
+# Stage 2: Extract layered JAR for better Docker layer caching
+FROM eclipse-temurin:21-jre-alpine AS layers
+
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+RUN java -Djarmode=layertools -jar app.jar extract
+
+# Stage 3: Minimal runtime image
 FROM eclipse-temurin:21-jre-alpine
 
 LABEL maintainer="TC_LLM_Generator Team"
@@ -34,10 +41,13 @@ WORKDIR /app
 # Create non-root user
 RUN addgroup -S spring && adduser -S spring -G spring
 
-# Copy JAR from build stage
-COPY --from=build /app/target/*.jar app.jar
+# Copy layers in order of change frequency (least → most)
+# dependencies and spring-boot-loader rarely change → cached most of the time
+COPY --from=layers --chown=spring:spring /app/dependencies/ ./
+COPY --from=layers --chown=spring:spring /app/spring-boot-loader/ ./
+COPY --from=layers --chown=spring:spring /app/snapshot-dependencies/ ./
+COPY --from=layers --chown=spring:spring /app/application/ ./
 
-RUN chown spring:spring app.jar
 USER spring:spring
 
 EXPOSE 8080
@@ -45,4 +55,4 @@ EXPOSE 8080
 # Optimized JVM options for container
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:+UseStringDeduplication"
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS org.springframework.boot.loader.launch.JarLauncher"]
