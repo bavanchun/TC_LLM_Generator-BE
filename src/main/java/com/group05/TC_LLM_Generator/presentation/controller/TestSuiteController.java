@@ -1,7 +1,6 @@
 package com.group05.TC_LLM_Generator.presentation.controller;
 
 import com.group05.TC_LLM_Generator.application.service.ProjectService;
-import com.group05.TC_LLM_Generator.application.service.TestCaseService;
 import com.group05.TC_LLM_Generator.application.service.TestSuiteItemService;
 import com.group05.TC_LLM_Generator.application.service.TestSuiteService;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.Project;
@@ -41,7 +40,6 @@ public class TestSuiteController {
 
     private final TestSuiteService testSuiteService;
     private final TestSuiteItemService testSuiteItemService;
-    private final TestCaseService testCaseService;
     private final ProjectService projectService;
     private final TestSuitePresentationMapper mapper;
     private final TestSuiteModelAssembler assembler;
@@ -130,13 +128,7 @@ public class TestSuiteController {
             @PathVariable("suiteId") UUID suiteId,
             @Valid @RequestBody AddTestCaseToSuiteRequest request) {
 
-        TestSuite testSuite = testSuiteService.getTestSuiteById(suiteId)
-                .orElseThrow(() -> new ResourceNotFoundException("TestSuite", "id", suiteId));
-
-        TestCase testCase = testCaseService.getTestCaseById(request.getTestCaseId())
-                .orElseThrow(() -> new ResourceNotFoundException("TestCase", "id", request.getTestCaseId()));
-
-        TestSuiteItem item = testSuiteItemService.addTestCaseToSuite(testSuite, testCase);
+        TestSuiteItem item = testSuiteItemService.addTestCaseToSuite(suiteId, request.getTestCaseId());
         TestCaseResponse response = testCaseAssembler.toModel(item.getTestCase());
 
         return ResponseEntity

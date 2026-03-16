@@ -24,9 +24,16 @@ public interface TestSuiteItemRepository extends JpaRepository<TestSuiteItem, UU
     List<TestSuiteItem> findByTestCase_TestCaseId(UUID testCaseId);
 
     /**
-     * Find test suite items ordered by display order, eagerly fetching testCase.
+     * Find test suite items ordered by display order, eagerly fetching testCase
+     * AND its nested lazy associations (userStory, acceptanceCriteria) to prevent
+     * LazyInitializationException in the presentation mapper.
      */
-    @Query("SELECT tsi FROM TestSuiteItem tsi JOIN FETCH tsi.testCase WHERE tsi.testSuite.testSuiteId = :testSuiteId ORDER BY tsi.displayOrder ASC")
+    @Query("SELECT tsi FROM TestSuiteItem tsi " +
+           "JOIN FETCH tsi.testCase tc " +
+           "LEFT JOIN FETCH tc.userStory " +
+           "LEFT JOIN FETCH tc.acceptanceCriteria " +
+           "WHERE tsi.testSuite.testSuiteId = :testSuiteId " +
+           "ORDER BY tsi.displayOrder ASC")
     List<TestSuiteItem> findByTestSuiteIdOrderedWithTestCase(@Param("testSuiteId") UUID testSuiteId);
 
     // Original method kept for backward compatibility
