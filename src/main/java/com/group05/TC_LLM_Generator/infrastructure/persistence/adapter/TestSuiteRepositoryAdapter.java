@@ -25,7 +25,8 @@ public class TestSuiteRepositoryAdapter implements TestSuiteRepositoryPort {
 
     @Override
     public Optional<TestSuite> findById(UUID testSuiteId) {
-        return jpaRepository.findById(testSuiteId);
+        // Use JOIN FETCH to eagerly load project — prevents LazyInitializationException
+        return jpaRepository.findByIdWithProject(testSuiteId);
     }
 
     @Override
@@ -35,17 +36,20 @@ public class TestSuiteRepositoryAdapter implements TestSuiteRepositoryPort {
 
     @Override
     public Page<TestSuite> findAll(Pageable pageable) {
-        return jpaRepository.findAll(pageable);
+        // Use JOIN FETCH to eagerly load project
+        return jpaRepository.findAllWithProject(pageable);
     }
 
     @Override
     public List<TestSuite> findByProjectId(UUID projectId) {
-        return jpaRepository.findByProject_ProjectId(projectId);
+        // Use JOIN FETCH to eagerly load project
+        return jpaRepository.findByProject_ProjectIdWithProject(projectId);
     }
 
     @Override
     public Page<TestSuite> findByProjectId(UUID projectId, Pageable pageable) {
-        return jpaRepository.findByProject_ProjectId(projectId, pageable);
+        // Use JOIN FETCH to eagerly load project
+        return jpaRepository.findByProject_ProjectIdWithProject(projectId, pageable);
     }
 
     @Override

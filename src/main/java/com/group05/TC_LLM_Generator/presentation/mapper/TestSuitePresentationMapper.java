@@ -23,10 +23,14 @@ public interface TestSuitePresentationMapper {
     @Mapping(target = "testSuiteId", ignore = true)
     @Mapping(target = "project", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "testSuiteItems", ignore = true)
+    @Mapping(target = "planSuites", ignore = true)
     TestSuite toEntity(CreateTestSuiteRequest request);
 
     @Mapping(target = "testSuiteId", ignore = true)
     @Mapping(target = "project", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "testSuiteItems", ignore = true)
+    @Mapping(target = "planSuites", ignore = true)
     void updateEntity(UpdateTestSuiteRequest request, @MappingTarget TestSuite entity);
 }

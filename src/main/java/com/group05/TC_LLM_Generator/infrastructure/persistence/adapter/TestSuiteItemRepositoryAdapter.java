@@ -28,7 +28,8 @@ public class TestSuiteItemRepositoryAdapter implements TestSuiteItemRepositoryPo
 
     @Override
     public List<TestSuiteItem> findByTestSuiteIdOrdered(UUID testSuiteId) {
-        return jpaRepository.findByTestSuite_TestSuiteIdOrderByDisplayOrderAsc(testSuiteId);
+        // Use JOIN FETCH to eagerly load testCase — prevents LazyInitializationException
+        return jpaRepository.findByTestSuiteIdOrderedWithTestCase(testSuiteId);
     }
 
     @Override
