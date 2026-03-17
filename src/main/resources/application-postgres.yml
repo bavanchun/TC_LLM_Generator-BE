@@ -17,7 +17,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update # Hibernate will auto-create/update tables for development
+      ddl-auto: validate # validate schema instead of auto-modifying it
       naming:
         physical-strategy: "org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl"
     properties:

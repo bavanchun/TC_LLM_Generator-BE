@@ -187,11 +187,11 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
-        log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
+        log.error("Data integrity violation: {}", ex.getMostSpecificCause().getMessage(), ex);
 
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error("Data conflict: the operation violates a database constraint."));
+                .body(ApiResponse.error("Data conflict: " + ex.getMostSpecificCause().getMessage()));
     }
 
     /**
