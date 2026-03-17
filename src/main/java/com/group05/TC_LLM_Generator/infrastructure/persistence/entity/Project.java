@@ -17,7 +17,9 @@ import java.util.UUID;
  * JPA Entity for projects table
  */
 @Entity
-@Table(name = "projects")
+@Table(name = "projects", uniqueConstraints = {
+    @UniqueConstraint(name = "uk_project_key_workspace", columnNames = {"workspace_id", "project_key"})
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -38,7 +40,7 @@ public class Project {
     @JoinColumn(name = "created_by_user_id", referencedColumnName = "user_id", nullable = false)
     private UserEntity createdByUser;
 
-    @Column(name = "project_key", nullable = false, unique = true, length = 20)
+    @Column(name = "project_key", nullable = false, length = 20)
     private String projectKey;
 
     @Column(name = "name", nullable = false, length = 255)

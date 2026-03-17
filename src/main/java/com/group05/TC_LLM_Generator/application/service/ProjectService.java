@@ -33,8 +33,9 @@ public class ProjectService {
      */
     @Transactional
     public Project createProject(Project project) {
-        if (projectRepository.existsByProjectKey(project.getProjectKey())) {
-            throw new IllegalArgumentException("Project key already exists: " + project.getProjectKey());
+        UUID workspaceId = project.getWorkspace().getWorkspaceId();
+        if (projectRepository.existsByWorkspaceIdAndProjectKey(workspaceId, project.getProjectKey())) {
+            throw new IllegalArgumentException("Project key already exists in this workspace: " + project.getProjectKey());
         }
         
         Project saved = projectRepository.save(project);
@@ -178,9 +179,9 @@ public class ProjectService {
     }
 
     /**
-     * Check if project key exists
+     * Check if project key exists within a workspace
      */
-    public boolean projectKeyExists(String projectKey) {
-        return projectRepository.existsByProjectKey(projectKey);
+    public boolean projectKeyExists(UUID workspaceId, String projectKey) {
+        return projectRepository.existsByWorkspaceIdAndProjectKey(workspaceId, projectKey);
     }
 }

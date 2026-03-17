@@ -54,6 +54,8 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
 
     boolean existsByProjectKey(String projectKey);
 
+    boolean existsByWorkspace_WorkspaceIdAndProjectKey(UUID workspaceId, String projectKey);
+
     List<Project> findByJiraSiteId(String jiraSiteId);
 
     long countByWorkspace_WorkspaceId(UUID workspaceId);

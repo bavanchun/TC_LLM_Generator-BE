@@ -40,6 +40,8 @@ public interface ProjectRepositoryPort {
 
     boolean existsByProjectKey(String projectKey);
 
+    boolean existsByWorkspaceIdAndProjectKey(UUID workspaceId, String projectKey);
+
     long count();
 
     long countByWorkspaceId(UUID workspaceId);

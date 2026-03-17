@@ -87,6 +87,11 @@ public class ProjectRepositoryAdapter implements ProjectRepositoryPort {
     }
 
     @Override
+    public boolean existsByWorkspaceIdAndProjectKey(UUID workspaceId, String projectKey) {
+        return jpaRepository.existsByWorkspace_WorkspaceIdAndProjectKey(workspaceId, projectKey);
+    }
+
+    @Override
     public long count() {
         return jpaRepository.count();
     }
