@@ -3,6 +3,7 @@ package com.group05.TC_LLM_Generator.infrastructure.persistence.repository;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.ProjectMember;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -21,6 +22,7 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, UU
      * @param projectId project ID
      * @return List of project members
      */
+    @EntityGraph(attributePaths = {"project", "user"})
     List<ProjectMember> findByProject_ProjectId(UUID projectId);
 
     /**
@@ -46,7 +48,9 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, UU
      */
     List<ProjectMember> findByProject_ProjectIdAndRole(UUID projectId, String role);
 
+    @EntityGraph(attributePaths = {"project", "project.workspace", "user"})
     Page<ProjectMember> findByProject_ProjectId(UUID projectId, Pageable pageable);
 
     List<ProjectMember> findByUser_UserIdAndProject_Workspace_WorkspaceId(UUID userId, UUID workspaceId);
 }
+

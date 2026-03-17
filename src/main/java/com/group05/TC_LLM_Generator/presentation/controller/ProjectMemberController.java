@@ -1,9 +1,11 @@
 package com.group05.TC_LLM_Generator.presentation.controller;
 
+import com.group05.TC_LLM_Generator.application.service.ProjectAuthorizationService;
 import com.group05.TC_LLM_Generator.application.service.ProjectMemberService;
 import com.group05.TC_LLM_Generator.application.service.ProjectService;
 import com.group05.TC_LLM_Generator.application.service.UserService;
 import com.group05.TC_LLM_Generator.application.service.WorkspaceMemberService;
+import com.group05.TC_LLM_Generator.domain.model.enums.ProjectRole;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.Project;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.ProjectMember;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.UserEntity;
@@ -28,6 +30,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -39,6 +42,7 @@ public class ProjectMemberController {
     private final ProjectService projectService;
     private final UserService userService;
     private final WorkspaceMemberService workspaceMemberService;
+    private final ProjectAuthorizationService projectAuth;
     private final ProjectMemberPresentationMapper mapper;
     private final ProjectMemberModelAssembler assembler;
     private final PagedResourcesAssembler<ProjectMember> pagedResourcesAssembler;
@@ -53,12 +57,9 @@ public class ProjectMemberController {
         Project project = projectService.getProjectById(request.getProjectId())
                 .orElseThrow(() -> new ResourceNotFoundException("Project", "id", request.getProjectId()));
 
-        // Only workspace Owner/Admin can add project members
+        // Auth: only Lead or WS Admin/Owner can add project members
         UUID workspaceId = project.getWorkspace().getWorkspaceId();
-        if (!workspaceMemberService.isOwnerOrAdmin(workspaceId, currentUserId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error("Only workspace Owner or Admin can add project members"));
-        }
+        projectAuth.requireLeadOrAdminAccess(project.getProjectId(), workspaceId, currentUserId);
 
         // Validate: user being added must be a workspace member
         if (!workspaceMemberService.isMember(workspaceId, request.getUserId())) {
@@ -85,13 +86,10 @@ public class ProjectMemberController {
         ProjectMember member = projectMemberService.getProjectMemberById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("ProjectMember", "id", id));
 
-        // Must be workspace member to view
+        // Auth: only Lead or WS Admin/Owner can view team details
         UUID currentUserId = UUID.fromString(jwt.getSubject());
         UUID workspaceId = member.getProject().getWorkspace().getWorkspaceId();
-        if (!workspaceMemberService.isMember(workspaceId, currentUserId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error("You are not a member of this workspace"));
-        }
+        projectAuth.requireLeadOrAdminAccess(member.getProject().getProjectId(), workspaceId, currentUserId);
 
         ProjectMemberResponse response = assembler.toModel(member);
         return ResponseEntity.ok(ApiResponse.success(response, "Project member retrieved successfully"));
@@ -106,13 +104,10 @@ public class ProjectMemberController {
         Project project = projectService.getProjectById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
 
-        // Must be workspace member to view project members
+        // Auth: only Lead or WS Admin/Owner can view team page
         UUID currentUserId = UUID.fromString(jwt.getSubject());
         UUID workspaceId = project.getWorkspace().getWorkspaceId();
-        if (!workspaceMemberService.isMember(workspaceId, currentUserId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error("You are not a member of this workspace"));
-        }
+        projectAuth.requireLeadOrAdminAccess(projectId, workspaceId, currentUserId);
 
         Page<ProjectMember> page = projectMemberService.getProjectMembersByProject(projectId, pageable);
         PagedModel<ProjectMemberResponse> pagedModel = pagedResourcesAssembler.toModel(page, assembler);
@@ -129,13 +124,10 @@ public class ProjectMemberController {
         ProjectMember existing = projectMemberService.getProjectMemberById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("ProjectMember", "id", id));
 
-        // Only workspace Owner/Admin can change roles
+        // Auth: only Lead or WS Admin/Owner can change roles
         UUID currentUserId = UUID.fromString(jwt.getSubject());
         UUID workspaceId = existing.getProject().getWorkspace().getWorkspaceId();
-        if (!workspaceMemberService.isOwnerOrAdmin(workspaceId, currentUserId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error("Only workspace Owner or Admin can change project member roles"));
-        }
+        projectAuth.requireLeadOrAdminAccess(existing.getProject().getProjectId(), workspaceId, currentUserId);
 
         mapper.updateEntity(request, existing);
         ProjectMember updated = projectMemberService.updateProjectMember(id, existing);
@@ -152,15 +144,43 @@ public class ProjectMemberController {
         ProjectMember member = projectMemberService.getProjectMemberById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("ProjectMember", "id", id));
 
-        // Only workspace Owner/Admin can remove members
+        // Auth: only Lead or WS Admin/Owner can remove members
         UUID currentUserId = UUID.fromString(jwt.getSubject());
         UUID workspaceId = member.getProject().getWorkspace().getWorkspaceId();
-        if (!workspaceMemberService.isOwnerOrAdmin(workspaceId, currentUserId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error("Only workspace Owner or Admin can remove project members"));
-        }
+        projectAuth.requireLeadOrAdminAccess(member.getProject().getProjectId(), workspaceId, currentUserId);
 
         projectMemberService.removeMember(id);
         return ResponseEntity.ok(ApiResponse.success("Project member removed successfully"));
+    }
+
+    /**
+     * Check if the current user can manage this project's team.
+     * Returns { canManageTeam: true/false, projectRole: "..." }
+     */
+    @GetMapping("/project/{projectId}/my-role")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getMyProjectRole(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("projectId") UUID projectId) {
+
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+
+        Project project = projectService.getProjectById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", projectId));
+
+        UUID workspaceId = project.getWorkspace().getWorkspaceId();
+        boolean isWsAdmin = workspaceMemberService.isOwnerOrAdmin(workspaceId, currentUserId);
+        ProjectRole projectRole = projectAuth.getUserProjectRole(projectId, currentUserId);
+
+        boolean canManageTeam = isWsAdmin || projectRole == ProjectRole.Lead;
+
+        String roleStr = isWsAdmin ? "Admin" : (projectRole != null ? projectRole.name() : "None");
+
+        Map<String, Object> result = Map.of(
+                "canManageTeam", canManageTeam,
+                "projectRole", roleStr,
+                "isWorkspaceAdmin", isWsAdmin
+        );
+
+        return ResponseEntity.ok(ApiResponse.success(result, "Role retrieved"));
     }
 }

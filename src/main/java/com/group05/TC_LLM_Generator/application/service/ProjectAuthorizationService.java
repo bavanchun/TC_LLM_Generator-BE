@@ -95,6 +95,38 @@ public class ProjectAuthorizationService {
     }
 
     /**
+     * Require Lead or Workspace Admin/Owner access.
+     * Used for team management operations: viewing team page, changing roles, adding/removing members.
+     */
+    public void requireLeadOrAdminAccess(UUID projectId, UUID workspaceId, UUID userId) {
+        // Workspace Owner/Admin bypass
+        if (workspaceMemberService.isOwnerOrAdmin(workspaceId, userId)) {
+            return;
+        }
+        ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new AccessDeniedException(
+                        "You do not have access to this project."));
+
+        ProjectRole role = ProjectRole.fromString(member.getRole());
+        if (role != ProjectRole.Lead) {
+            throw new AccessDeniedException(
+                    "Only project Leads and workspace Admins/Owners can manage team members.");
+        }
+    }
+
+    /**
+     * Check if user is Lead or Workspace Admin/Owner (non-throwing).
+     */
+    public boolean isLeadOrAdmin(UUID projectId, UUID workspaceId, UUID userId) {
+        if (workspaceMemberService.isOwnerOrAdmin(workspaceId, userId)) {
+            return true;
+        }
+        return projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+                .map(m -> ProjectRole.fromString(m.getRole()) == ProjectRole.Lead)
+                .orElse(false);
+    }
+
+    /**
      * Get the user's project role (or null if not a member).
      */
     public ProjectRole getUserProjectRole(UUID projectId, UUID userId) {
