@@ -26,7 +26,7 @@ public class UserStoryModelAssembler implements RepresentationModelAssembler<Use
     public UserStoryResponse toModel(UserStory entity) {
         UserStoryResponse response = mapper.toResponse(entity);
 
-        response.add(linkTo(methodOn(UserStoryController.class).getUserStoryById(entity.getUserStoryId())).withSelfRel());
+        response.add(linkTo(methodOn(UserStoryController.class).getUserStoryById(null, entity.getUserStoryId())).withSelfRel());
         response.add(linkTo(methodOn(UserStoryController.class).updateUserStory(entity.getUserStoryId(), null, null)).withRel("update"));
         response.add(linkTo(methodOn(UserStoryController.class).deleteUserStory(entity.getUserStoryId(), null)).withRel("delete"));
         response.add(linkTo(methodOn(UserStoryController.class).getAllUserStories(null)).withRel("userStories"));

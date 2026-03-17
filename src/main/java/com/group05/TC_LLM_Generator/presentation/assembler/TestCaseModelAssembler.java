@@ -26,9 +26,9 @@ public class TestCaseModelAssembler implements RepresentationModelAssembler<Test
         TestCaseResponse response = mapper.toResponse(entity);
 
         // Add HATEOAS links
-        response.add(linkTo(methodOn(TestCaseController.class).getTestCaseById(entity.getTestCaseId())).withSelfRel());
-        response.add(linkTo(methodOn(TestCaseController.class).updateTestCase(entity.getTestCaseId(), null)).withRel("update"));
-        response.add(linkTo(methodOn(TestCaseController.class).deleteTestCase(entity.getTestCaseId())).withRel("delete"));
+        response.add(linkTo(methodOn(TestCaseController.class).getTestCaseById(null, entity.getTestCaseId())).withSelfRel());
+        response.add(linkTo(methodOn(TestCaseController.class).updateTestCase(null, entity.getTestCaseId(), null)).withRel("update"));
+        response.add(linkTo(methodOn(TestCaseController.class).deleteTestCase(null, entity.getTestCaseId())).withRel("delete"));
         response.add(linkTo(methodOn(TestCaseController.class).getAllTestCases(null)).withRel("testCases"));
 
         return response;

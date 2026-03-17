@@ -22,9 +22,9 @@ public class TestSuiteModelAssembler implements RepresentationModelAssembler<Tes
     public TestSuiteResponse toModel(TestSuite entity) {
         TestSuiteResponse response = mapper.toResponse(entity);
 
-        response.add(linkTo(methodOn(TestSuiteController.class).getTestSuiteById(entity.getTestSuiteId())).withSelfRel());
-        response.add(linkTo(methodOn(TestSuiteController.class).updateTestSuite(entity.getTestSuiteId(), null)).withRel("update"));
-        response.add(linkTo(methodOn(TestSuiteController.class).deleteTestSuite(entity.getTestSuiteId())).withRel("delete"));
+        response.add(linkTo(methodOn(TestSuiteController.class).getTestSuiteById(null, entity.getTestSuiteId())).withSelfRel());
+        response.add(linkTo(methodOn(TestSuiteController.class).updateTestSuite(null, entity.getTestSuiteId(), null)).withRel("update"));
+        response.add(linkTo(methodOn(TestSuiteController.class).deleteTestSuite(null, entity.getTestSuiteId())).withRel("delete"));
         response.add(linkTo(methodOn(TestSuiteController.class).getAllTestSuites(null)).withRel("testSuites"));
 
         return response;
