@@ -1,6 +1,7 @@
 package com.group05.TC_LLM_Generator.presentation.controller;
 
 import com.group05.TC_LLM_Generator.application.service.UserService;
+import com.group05.TC_LLM_Generator.application.service.WorkspaceMemberService;
 import com.group05.TC_LLM_Generator.application.service.WorkspaceService;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.UserEntity;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.Workspace;
@@ -43,6 +44,7 @@ public class WorkspaceController {
 
     private final WorkspaceService workspaceService;
     private final UserService userService;
+    private final WorkspaceMemberService workspaceMemberService;
     private final WorkspacePresentationMapper mapper;
     private final WorkspaceModelAssembler assembler;
     private final PagedResourcesAssembler<Workspace> pagedResourcesAssembler;
@@ -71,7 +73,18 @@ public class WorkspaceController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<WorkspaceResponse>> getWorkspaceById(@PathVariable("id") UUID id) {
+    public ResponseEntity<ApiResponse<WorkspaceResponse>> getWorkspaceById(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("id") UUID id) {
+
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+
+        // Check if user is a member or owner
+        if (!workspaceMemberService.isMember(id, currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("You do not have access to this workspace"));
+        }
+
         Workspace workspace = workspaceService.getWorkspaceById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace", "id", id));
 
@@ -132,12 +145,14 @@ public class WorkspaceController {
         return ResponseEntity.ok(ApiResponse.success("Workspace deleted successfully"));
     }
 
-    @GetMapping("/owner/{userId}")
+    @GetMapping("/owner")
     public ResponseEntity<ApiResponse<PagedModel<WorkspaceResponse>>> getWorkspacesByOwner(
-            @PathVariable("userId") UUID userId,
+            @AuthenticationPrincipal Jwt jwt,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        Page<Workspace> page = workspaceService.getWorkspacesByOwner(userId, pageable);
+        // User can only list their own workspaces
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+        Page<Workspace> page = workspaceService.getWorkspacesByOwner(currentUserId, pageable);
         PagedModel<WorkspaceResponse> pagedModel = pagedResourcesAssembler.toModel(page, assembler);
 
         return ResponseEntity.ok(ApiResponse.success(pagedModel, "Workspaces retrieved successfully"));

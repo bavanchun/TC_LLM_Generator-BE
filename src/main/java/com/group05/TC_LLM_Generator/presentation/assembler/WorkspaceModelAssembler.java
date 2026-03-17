@@ -30,7 +30,7 @@ public class WorkspaceModelAssembler implements RepresentationModelAssembler<Wor
         response.setProjectCount(projectRepository.countByWorkspace_WorkspaceId(entity.getWorkspaceId()));
         response.setMemberCount(workspaceMemberRepository.countByWorkspace_WorkspaceId(entity.getWorkspaceId()));
 
-        response.add(linkTo(methodOn(WorkspaceController.class).getWorkspaceById(entity.getWorkspaceId())).withSelfRel());
+        response.add(linkTo(methodOn(WorkspaceController.class).getWorkspaceById(null, entity.getWorkspaceId())).withSelfRel());
         response.add(linkTo(methodOn(WorkspaceController.class).updateWorkspace(null, entity.getWorkspaceId(), null)).withRel("update"));
         response.add(linkTo(methodOn(WorkspaceController.class).deleteWorkspace(null, entity.getWorkspaceId())).withRel("delete"));
         response.add(linkTo(methodOn(WorkspaceController.class).getMyWorkspaces(null, null)).withRel("workspaces"));

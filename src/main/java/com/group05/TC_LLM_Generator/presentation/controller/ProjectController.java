@@ -2,6 +2,7 @@ package com.group05.TC_LLM_Generator.presentation.controller;
 
 import com.group05.TC_LLM_Generator.application.service.ProjectService;
 import com.group05.TC_LLM_Generator.application.service.UserService;
+import com.group05.TC_LLM_Generator.application.service.WorkspaceMemberService;
 import com.group05.TC_LLM_Generator.domain.model.enums.ProjectStatus;
 import com.group05.TC_LLM_Generator.application.service.WorkspaceService;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.Project;
@@ -38,6 +39,7 @@ public class ProjectController {
     private final ProjectService projectService;
     private final WorkspaceService workspaceService;
     private final UserService userService;
+    private final WorkspaceMemberService workspaceMemberService;
     private final ProjectPresentationMapper mapper;
     private final ProjectModelAssembler assembler;
     private final PagedResourcesAssembler<Project> pagedResourcesAssembler;
@@ -51,6 +53,12 @@ public class ProjectController {
 
         Workspace workspace = workspaceService.getWorkspaceById(request.getWorkspaceId())
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace", "id", request.getWorkspaceId()));
+
+        // Check workspace membership
+        if (!workspaceMemberService.isMember(request.getWorkspaceId(), currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("You must be a workspace member to create projects"));
+        }
 
         UserEntity creator = userService.getUserById(currentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", currentUserId));
@@ -75,9 +83,20 @@ public class ProjectController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ProjectResponse>> getProjectById(@PathVariable("id") UUID id) {
+    public ResponseEntity<ApiResponse<ProjectResponse>> getProjectById(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("id") UUID id) {
+
         Project project = projectService.getProjectById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", "id", id));
+
+        // Check workspace membership
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+        UUID workspaceId = project.getWorkspace().getWorkspaceId();
+        if (!workspaceMemberService.isMember(workspaceId, currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("You do not have access to this project"));
+        }
 
         ProjectResponse response = assembler.toModel(project);
         return ResponseEntity.ok(ApiResponse.success(response, "Project retrieved successfully"));

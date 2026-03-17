@@ -23,7 +23,7 @@ public class InvitationModelAssembler implements RepresentationModelAssembler<Wo
         InvitationResponse response = mapper.toResponse(entity);
 
         response.add(linkTo(methodOn(WorkspaceInvitationController.class)
-                .cancelInvitation(entity.getInvitationId())).withRel("cancel"));
+                .cancelInvitation(null, entity.getInvitationId())).withRel("cancel"));
 
         return response;
     }

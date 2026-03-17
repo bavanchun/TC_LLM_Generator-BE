@@ -23,9 +23,9 @@ public class WorkspaceMemberModelAssembler implements RepresentationModelAssembl
         WorkspaceMemberResponse response = mapper.toResponse(entity);
 
         response.add(linkTo(methodOn(WorkspaceMemberController.class)
-                .getWorkspaceMemberById(entity.getWorkspaceMemberId())).withSelfRel());
+                .getWorkspaceMemberById(null, entity.getWorkspaceMemberId())).withSelfRel());
         response.add(linkTo(methodOn(WorkspaceMemberController.class)
-                .removeWorkspaceMember(entity.getWorkspaceMemberId())).withRel("delete"));
+                .removeWorkspaceMember(null, entity.getWorkspaceMemberId())).withRel("delete"));
 
         return response;
     }

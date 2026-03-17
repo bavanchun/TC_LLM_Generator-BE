@@ -22,19 +22,14 @@ public class ProjectMemberModelAssembler implements RepresentationModelAssembler
     public ProjectMemberResponse toModel(ProjectMember entity) {
         ProjectMemberResponse response = mapper.toResponse(entity);
 
-        response.add(linkTo(methodOn(ProjectMemberController.class).getProjectMemberById(entity.getProjectMemberId())).withSelfRel());
-        response.add(linkTo(methodOn(ProjectMemberController.class).removeProjectMember(entity.getProjectMemberId())).withRel("delete"));
-        response.add(linkTo(methodOn(ProjectMemberController.class).getAllProjectMembers(null)).withRel("projectMembers"));
+        response.add(linkTo(methodOn(ProjectMemberController.class).getProjectMemberById(null, entity.getProjectMemberId())).withSelfRel());
+        response.add(linkTo(methodOn(ProjectMemberController.class).removeProjectMember(null, entity.getProjectMemberId())).withRel("delete"));
 
         return response;
     }
 
     @Override
     public CollectionModel<ProjectMemberResponse> toCollectionModel(Iterable<? extends ProjectMember> entities) {
-        CollectionModel<ProjectMemberResponse> collectionModel = RepresentationModelAssembler.super.toCollectionModel(entities);
-
-        collectionModel.add(linkTo(methodOn(ProjectMemberController.class).getAllProjectMembers(null)).withSelfRel());
-
-        return collectionModel;
+        return RepresentationModelAssembler.super.toCollectionModel(entities);
     }
 }

@@ -1,7 +1,9 @@
 package com.group05.TC_LLM_Generator.application.service;
 
+import com.group05.TC_LLM_Generator.application.port.out.ProjectMemberRepositoryPort;
 import com.group05.TC_LLM_Generator.application.port.out.WorkspaceMemberRepositoryPort;
 import com.group05.TC_LLM_Generator.application.port.out.WorkspaceRepositoryPort;
+import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.ProjectMember;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.UserEntity;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.Workspace;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.WorkspaceMember;
@@ -25,6 +27,7 @@ public class WorkspaceMemberService {
 
     private final WorkspaceMemberRepositoryPort workspaceMemberRepository;
     private final WorkspaceRepositoryPort workspaceRepository;
+    private final ProjectMemberRepositoryPort projectMemberRepository;
 
     @Transactional
     public WorkspaceMember addMember(Workspace workspace, UserEntity user, String role) {
@@ -68,10 +71,20 @@ public class WorkspaceMemberService {
     }
 
     public boolean isMember(UUID workspaceId, UUID userId) {
+        // Also check if user is the workspace owner
+        Optional<Workspace> wsOpt = workspaceRepository.findById(workspaceId);
+        if (wsOpt.isPresent() && wsOpt.get().getOwnerUser().getUserId().equals(userId)) {
+            return true;
+        }
         return workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId);
     }
 
     public boolean isOwnerOrAdmin(UUID workspaceId, UUID userId) {
+        // Check if user is the workspace owner first
+        Optional<Workspace> wsOpt = workspaceRepository.findById(workspaceId);
+        if (wsOpt.isPresent() && wsOpt.get().getOwnerUser().getUserId().equals(userId)) {
+            return true;
+        }
         Optional<WorkspaceMember> member = workspaceMemberRepository
                 .findByWorkspaceIdAndUserId(workspaceId, userId);
         return member.map(m -> "Owner".equals(m.getRole()) || "Admin".equals(m.getRole()))
@@ -100,6 +113,19 @@ public class WorkspaceMemberService {
 
         if ("Owner".equals(member.getRole())) {
             throw new IllegalArgumentException("Cannot remove the workspace owner");
+        }
+
+        // Cascade — remove all ProjectMember records in projects that belong to this workspace
+        UUID userId = member.getUser().getUserId();
+        UUID workspaceId = member.getWorkspace().getWorkspaceId();
+        List<ProjectMember> projectMemberships = projectMemberRepository.findAll();
+        for (ProjectMember pm : projectMemberships) {
+            if (pm.getUser().getUserId().equals(userId)
+                    && pm.getProject().getWorkspace().getWorkspaceId().equals(workspaceId)) {
+                projectMemberRepository.deleteById(pm.getProjectMemberId());
+                log.info("Cascade-removed ProjectMember '{}' from project '{}'",
+                        pm.getProjectMemberId(), pm.getProject().getName());
+            }
         }
 
         workspaceMemberRepository.deleteById(workspaceMemberId);

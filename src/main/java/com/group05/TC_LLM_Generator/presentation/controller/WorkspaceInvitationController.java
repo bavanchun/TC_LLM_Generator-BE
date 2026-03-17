@@ -2,6 +2,7 @@ package com.group05.TC_LLM_Generator.presentation.controller;
 
 import com.group05.TC_LLM_Generator.application.service.UserService;
 import com.group05.TC_LLM_Generator.application.service.WorkspaceInvitationService;
+import com.group05.TC_LLM_Generator.application.service.WorkspaceMemberService;
 import com.group05.TC_LLM_Generator.application.service.WorkspaceService;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.UserEntity;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.Workspace;
@@ -40,6 +41,7 @@ public class WorkspaceInvitationController {
     private final WorkspaceInvitationService invitationService;
     private final WorkspaceService workspaceService;
     private final UserService userService;
+    private final WorkspaceMemberService workspaceMemberService;
     private final InvitationModelAssembler invitationAssembler;
     private final WorkspaceMemberModelAssembler memberAssembler;
     private final PagedResourcesAssembler<WorkspaceInvitation> pagedResourcesAssembler;
@@ -50,6 +52,13 @@ public class WorkspaceInvitationController {
             @AuthenticationPrincipal Jwt jwt) {
 
         UUID inviterUserId = UUID.fromString(jwt.getSubject());
+
+        // Only Owner/Admin can send invitations
+        if (!workspaceMemberService.isOwnerOrAdmin(request.getWorkspaceId(), inviterUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Only workspace Owner or Admin can send invitations"));
+        }
+
         UserEntity inviter = userService.getUserById(inviterUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", inviterUserId));
 
@@ -67,8 +76,16 @@ public class WorkspaceInvitationController {
 
     @GetMapping("/workspace/{workspaceId}")
     public ResponseEntity<ApiResponse<PagedModel<InvitationResponse>>> getInvitationsByWorkspace(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable("workspaceId") UUID workspaceId,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        // Only workspace members can view invitations
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+        if (!workspaceMemberService.isMember(workspaceId, currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("You are not a member of this workspace"));
+        }
 
         Page<WorkspaceInvitation> page = invitationService.getByWorkspaceId(workspaceId, pageable);
         PagedModel<InvitationResponse> pagedModel = pagedResourcesAssembler.toModel(page, invitationAssembler);
@@ -78,7 +95,15 @@ public class WorkspaceInvitationController {
 
     @GetMapping("/workspace/{workspaceId}/pending")
     public ResponseEntity<ApiResponse<List<InvitationResponse>>> getPendingInvitations(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable("workspaceId") UUID workspaceId) {
+
+        // Only workspace members can see pending invitations
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+        if (!workspaceMemberService.isMember(workspaceId, currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("You are not a member of this workspace"));
+        }
 
         List<InvitationResponse> responses = invitationService.getPendingInvitations(workspaceId)
                 .stream()
@@ -89,7 +114,12 @@ public class WorkspaceInvitationController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> cancelInvitation(@PathVariable("id") UUID id) {
+    public ResponseEntity<ApiResponse<Void>> cancelInvitation(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("id") UUID id) {
+
+        // JWT ensures only authenticated users can cancel
+        // The service validates invitation status
         invitationService.cancelInvitation(id);
         return ResponseEntity.ok(ApiResponse.success("Invitation cancelled successfully"));
     }

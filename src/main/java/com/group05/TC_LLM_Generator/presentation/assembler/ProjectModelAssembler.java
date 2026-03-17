@@ -22,7 +22,7 @@ public class ProjectModelAssembler implements RepresentationModelAssembler<Proje
     public ProjectResponse toModel(Project entity) {
         ProjectResponse response = mapper.toResponse(entity);
 
-        response.add(linkTo(methodOn(ProjectController.class).getProjectById(entity.getProjectId())).withSelfRel());
+        response.add(linkTo(methodOn(ProjectController.class).getProjectById(null, entity.getProjectId())).withSelfRel());
         response.add(linkTo(methodOn(ProjectController.class).updateProject(null, entity.getProjectId(), null)).withRel("update"));
         response.add(linkTo(methodOn(ProjectController.class).deleteProject(null, entity.getProjectId())).withRel("delete"));
         response.add(linkTo(methodOn(ProjectController.class).getMyProjects(null, null)).withRel("projects"));

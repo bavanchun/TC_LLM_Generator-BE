@@ -22,6 +22,8 @@ import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -39,7 +41,16 @@ public class WorkspaceMemberController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<WorkspaceMemberResponse>> addWorkspaceMember(
+            @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody AddWorkspaceMemberRequest request) {
+
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+
+        // Only Owner/Admin can add members
+        if (!workspaceMemberService.isOwnerOrAdmin(request.getWorkspaceId(), currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Only workspace Owner or Admin can add members"));
+        }
 
         Workspace workspace = workspaceService.getWorkspaceById(request.getWorkspaceId())
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace", "id", request.getWorkspaceId()));
@@ -57,20 +68,35 @@ public class WorkspaceMemberController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<WorkspaceMemberResponse>> getWorkspaceMemberById(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable("id") UUID id) {
 
         WorkspaceMember member = workspaceMemberService.getById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("WorkspaceMember", "id", id));
 
-        WorkspaceMemberResponse response = assembler.toModel(member);
+        // Only workspace members can view member details
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+        if (!workspaceMemberService.isMember(member.getWorkspace().getWorkspaceId(), currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("You are not a member of this workspace"));
+        }
 
+        WorkspaceMemberResponse response = assembler.toModel(member);
         return ResponseEntity.ok(ApiResponse.success(response, "Workspace member retrieved successfully"));
     }
 
     @GetMapping("/workspace/{workspaceId}")
     public ResponseEntity<ApiResponse<PagedModel<WorkspaceMemberResponse>>> getWorkspaceMembersByWorkspace(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable("workspaceId") UUID workspaceId,
             @PageableDefault(size = 20, sort = "joinedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        // Only workspace members can list members
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+        if (!workspaceMemberService.isMember(workspaceId, currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("You are not a member of this workspace"));
+        }
 
         Page<WorkspaceMember> page = workspaceMemberService.getByWorkspaceId(workspaceId, pageable);
         PagedModel<WorkspaceMemberResponse> pagedModel = pagedResourcesAssembler.toModel(page, assembler);
@@ -80,8 +106,19 @@ public class WorkspaceMemberController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<WorkspaceMemberResponse>> updateWorkspaceMemberRole(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateWorkspaceMemberRequest request) {
+
+        WorkspaceMember targetMember = workspaceMemberService.getById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("WorkspaceMember", "id", id));
+
+        // Only Owner/Admin can change roles
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+        if (!workspaceMemberService.isOwnerOrAdmin(targetMember.getWorkspace().getWorkspaceId(), currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Only workspace Owner or Admin can change member roles"));
+        }
 
         WorkspaceMember updated = workspaceMemberService.updateRole(id, request.getRole());
         WorkspaceMemberResponse response = assembler.toModel(updated);
@@ -90,13 +127,21 @@ public class WorkspaceMemberController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> removeWorkspaceMember(@PathVariable("id") UUID id) {
-        if (!workspaceMemberService.getById(id).isPresent()) {
-            throw new ResourceNotFoundException("WorkspaceMember", "id", id);
+    public ResponseEntity<ApiResponse<Void>> removeWorkspaceMember(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("id") UUID id) {
+
+        WorkspaceMember targetMember = workspaceMemberService.getById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("WorkspaceMember", "id", id));
+
+        // Only Owner/Admin can remove members
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+        if (!workspaceMemberService.isOwnerOrAdmin(targetMember.getWorkspace().getWorkspaceId(), currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Only workspace Owner or Admin can remove members"));
         }
 
         workspaceMemberService.removeMember(id);
-
         return ResponseEntity.ok(ApiResponse.success("Workspace member removed successfully"));
     }
 }

@@ -39,17 +39,22 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
     Page<Project> findByCreatedByUser_UserId(UUID userId, Pageable pageable);
 
     @Query(value = "SELECT DISTINCT p FROM Project p " +
-            "JOIN FETCH p.workspace " +
+            "JOIN FETCH p.workspace w " +
             "JOIN FETCH p.createdByUser " +
             "LEFT JOIN ProjectMember pm ON pm.project = p AND pm.user.userId = :userId " +
+            "LEFT JOIN WorkspaceMember wm ON wm.workspace = w AND wm.user.userId = :userId " +
             "WHERE p.createdByUser.userId = :userId " +
-            "OR p.workspace.ownerUser.userId = :userId " +
-            "OR pm.user.userId = :userId",
+            "OR w.ownerUser.userId = :userId " +
+            "OR pm.user.userId = :userId " +
+            "OR wm.user.userId = :userId",
             countQuery = "SELECT COUNT(DISTINCT p) FROM Project p " +
+            "JOIN p.workspace w " +
             "LEFT JOIN ProjectMember pm ON pm.project = p AND pm.user.userId = :userId " +
+            "LEFT JOIN WorkspaceMember wm ON wm.workspace = w AND wm.user.userId = :userId " +
             "WHERE p.createdByUser.userId = :userId " +
-            "OR p.workspace.ownerUser.userId = :userId " +
-            "OR pm.user.userId = :userId")
+            "OR w.ownerUser.userId = :userId " +
+            "OR pm.user.userId = :userId " +
+            "OR wm.user.userId = :userId")
     Page<Project> findAccessibleByUser(@Param("userId") UUID userId, Pageable pageable);
 
     boolean existsByProjectKey(String projectKey);
