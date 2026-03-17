@@ -119,14 +119,12 @@ public class WorkspaceMemberService {
         // Cascade — remove all ProjectMember records in projects that belong to this workspace
         UUID userId = member.getUser().getUserId();
         UUID workspaceId = member.getWorkspace().getWorkspaceId();
-        List<ProjectMember> projectMemberships = projectMemberRepository.findAll();
+        List<ProjectMember> projectMemberships = projectMemberRepository
+                .findByUserIdAndWorkspaceId(userId, workspaceId);
         for (ProjectMember pm : projectMemberships) {
-            if (pm.getUser().getUserId().equals(userId)
-                    && pm.getProject().getWorkspace().getWorkspaceId().equals(workspaceId)) {
-                projectMemberRepository.deleteById(pm.getProjectMemberId());
-                log.info("Cascade-removed ProjectMember '{}' from project '{}'",
-                        pm.getProjectMemberId(), pm.getProject().getName());
-            }
+            projectMemberRepository.deleteById(pm.getProjectMemberId());
+            log.info("Cascade-removed ProjectMember '{}' from project '{}'",
+                    pm.getProjectMemberId(), pm.getProject().getName());
         }
 
         workspaceMemberRepository.deleteById(workspaceMemberId);

@@ -62,4 +62,9 @@ public class ProjectMemberRepositoryAdapter implements ProjectMemberRepositoryPo
     public boolean existsById(UUID projectMemberId) {
         return jpaRepository.existsById(projectMemberId);
     }
+
+    @Override
+    public List<ProjectMember> findByUserIdAndWorkspaceId(UUID userId, UUID workspaceId) {
+        return jpaRepository.findByUser_UserIdAndProject_Workspace_WorkspaceId(userId, workspaceId);
+    }
 }

@@ -31,4 +31,6 @@ public interface ProjectMemberRepositoryPort {
     void deleteById(UUID projectMemberId);
 
     boolean existsById(UUID projectMemberId);
+
+    List<ProjectMember> findByUserIdAndWorkspaceId(UUID userId, UUID workspaceId);
 }

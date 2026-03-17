@@ -40,6 +40,7 @@ public class EntityChangedEvent extends ApplicationEvent {
      */
     public enum EntityType {
         WORKSPACE,
+        WORKSPACE_MEMBER,
         PROJECT,
         STORY,
         TEST_PLAN,

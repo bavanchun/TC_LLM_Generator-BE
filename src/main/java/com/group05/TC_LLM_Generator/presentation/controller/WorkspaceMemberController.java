@@ -3,6 +3,7 @@ package com.group05.TC_LLM_Generator.presentation.controller;
 import com.group05.TC_LLM_Generator.application.service.UserService;
 import com.group05.TC_LLM_Generator.application.service.WorkspaceMemberService;
 import com.group05.TC_LLM_Generator.application.service.WorkspaceService;
+import com.group05.TC_LLM_Generator.domain.event.EntityChangedEvent;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.UserEntity;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.Workspace;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.WorkspaceMember;
@@ -26,6 +27,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.context.ApplicationEventPublisher;
+
 import java.util.UUID;
 
 @RestController
@@ -38,6 +41,7 @@ public class WorkspaceMemberController {
     private final UserService userService;
     private final WorkspaceMemberModelAssembler assembler;
     private final PagedResourcesAssembler<WorkspaceMember> pagedResourcesAssembler;
+    private final ApplicationEventPublisher eventPublisher;
 
     @PostMapping
     public ResponseEntity<ApiResponse<WorkspaceMemberResponse>> addWorkspaceMember(
@@ -60,6 +64,13 @@ public class WorkspaceMemberController {
 
         WorkspaceMember savedMember = workspaceMemberService.addMember(workspace, user, request.getRole());
         WorkspaceMemberResponse response = assembler.toModel(savedMember);
+
+        eventPublisher.publishEvent(new EntityChangedEvent(
+                this, EntityChangedEvent.EntityType.WORKSPACE_MEMBER,
+                EntityChangedEvent.Action.CREATED,
+                savedMember.getWorkspaceMemberId().toString(),
+                request.getWorkspaceId().toString(),
+                response, currentUserId.toString()));
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -123,6 +134,13 @@ public class WorkspaceMemberController {
         WorkspaceMember updated = workspaceMemberService.updateRole(id, request.getRole());
         WorkspaceMemberResponse response = assembler.toModel(updated);
 
+        eventPublisher.publishEvent(new EntityChangedEvent(
+                this, EntityChangedEvent.EntityType.WORKSPACE_MEMBER,
+                EntityChangedEvent.Action.UPDATED,
+                id.toString(),
+                targetMember.getWorkspace().getWorkspaceId().toString(),
+                response, currentUserId.toString()));
+
         return ResponseEntity.ok(ApiResponse.success(response, "Workspace member updated successfully"));
     }
 
@@ -141,7 +159,15 @@ public class WorkspaceMemberController {
                     .body(ApiResponse.error("Only workspace Owner or Admin can remove members"));
         }
 
+        String workspaceId = targetMember.getWorkspace().getWorkspaceId().toString();
         workspaceMemberService.removeMember(id);
+
+        eventPublisher.publishEvent(new EntityChangedEvent(
+                this, EntityChangedEvent.EntityType.WORKSPACE_MEMBER,
+                EntityChangedEvent.Action.DELETED,
+                id.toString(), workspaceId,
+                null, currentUserId.toString()));
+
         return ResponseEntity.ok(ApiResponse.success("Workspace member removed successfully"));
     }
 }

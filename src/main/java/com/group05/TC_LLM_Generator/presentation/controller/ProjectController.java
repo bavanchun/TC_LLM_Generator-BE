@@ -54,10 +54,10 @@ public class ProjectController {
         Workspace workspace = workspaceService.getWorkspaceById(request.getWorkspaceId())
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace", "id", request.getWorkspaceId()));
 
-        // Check workspace membership
-        if (!workspaceMemberService.isMember(request.getWorkspaceId(), currentUserId)) {
+        // Only Owner/Admin can create projects
+        if (!workspaceMemberService.isOwnerOrAdmin(request.getWorkspaceId(), currentUserId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error("You must be a workspace member to create projects"));
+                    .body(ApiResponse.error("Only workspace Owner or Admin can create projects"));
         }
 
         UserEntity creator = userService.getUserById(currentUserId)
@@ -103,9 +103,19 @@ public class ProjectController {
     }
 
     @GetMapping("/key/{projectKey}")
-    public ResponseEntity<ApiResponse<ProjectResponse>> getProjectByKey(@PathVariable("projectKey") String projectKey) {
+    public ResponseEntity<ApiResponse<ProjectResponse>> getProjectByKey(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("projectKey") String projectKey) {
+
         Project project = projectService.getProjectByKey(projectKey)
                 .orElseThrow(() -> new ResourceNotFoundException("Project", "key", projectKey));
+
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+        UUID workspaceId = project.getWorkspace().getWorkspaceId();
+        if (!workspaceMemberService.isMember(workspaceId, currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("You do not have access to this project"));
+        }
 
         ProjectResponse response = assembler.toModel(project);
         return ResponseEntity.ok(ApiResponse.success(response, "Project retrieved successfully"));

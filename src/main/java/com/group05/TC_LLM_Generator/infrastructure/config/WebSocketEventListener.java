@@ -72,11 +72,12 @@ public class WebSocketEventListener {
      */
     private String resolveTopic(EntityChangedEvent event) {
         return switch (event.getEntityType()) {
-            case WORKSPACE  -> "/topic/workspaces";
-            case PROJECT    -> "/topic/workspaces/" + event.getParentId() + "/projects";
-            case STORY      -> "/topic/projects/" + event.getParentId() + "/stories";
-            case TEST_PLAN  -> "/topic/projects/" + event.getParentId() + "/test-plans";
-            case TEST_SUITE -> "/topic/projects/" + event.getParentId() + "/test-suites";
+            case WORKSPACE        -> "/topic/workspaces";
+            case WORKSPACE_MEMBER -> "/topic/workspaces/" + event.getParentId() + "/members";
+            case PROJECT          -> "/topic/workspaces/" + event.getParentId() + "/projects";
+            case STORY            -> "/topic/projects/" + event.getParentId() + "/stories";
+            case TEST_PLAN        -> "/topic/projects/" + event.getParentId() + "/test-plans";
+            case TEST_SUITE       -> "/topic/projects/" + event.getParentId() + "/test-suites";
         };
     }
 }

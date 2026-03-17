@@ -60,6 +60,12 @@ public class ProjectMemberController {
                     .body(ApiResponse.error("Only workspace Owner or Admin can add project members"));
         }
 
+        // Validate: user being added must be a workspace member
+        if (!workspaceMemberService.isMember(workspaceId, request.getUserId())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("User must be a workspace member before being added to a project"));
+        }
+
         UserEntity user = userService.getUserById(request.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", request.getUserId()));
 
