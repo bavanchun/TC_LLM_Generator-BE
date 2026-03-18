@@ -29,4 +29,6 @@ public interface TestSuiteRepositoryPort {
     void deleteById(UUID testSuiteId);
 
     boolean existsById(UUID testSuiteId);
+
+    long countByProjectId(UUID projectId);
 }

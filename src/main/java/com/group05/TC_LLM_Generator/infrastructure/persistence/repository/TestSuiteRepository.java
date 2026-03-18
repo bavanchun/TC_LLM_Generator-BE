@@ -39,4 +39,6 @@ public interface TestSuiteRepository extends JpaRepository<TestSuite, UUID> {
     List<TestSuite> findByProject_ProjectIdAndNameContainingIgnoreCase(UUID projectId, String name);
     List<TestSuite> findByProject_ProjectIdOrderByCreatedAtDesc(UUID projectId);
     Page<TestSuite> findByProject_ProjectId(UUID projectId, Pageable pageable);
+
+    long countByProject_ProjectId(UUID projectId);
 }

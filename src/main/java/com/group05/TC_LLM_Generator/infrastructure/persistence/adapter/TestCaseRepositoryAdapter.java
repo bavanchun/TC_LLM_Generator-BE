@@ -105,4 +105,14 @@ public class TestCaseRepositoryAdapter implements TestCaseRepositoryPort {
     public long count() {
         return jpaRepository.count();
     }
+
+    @Override
+    public long countByProjectId(UUID projectId) {
+        return jpaRepository.countByProjectId(projectId);
+    }
+
+    @Override
+    public long countByProjectIdAndGeneratedByAi(UUID projectId, boolean generatedByAi) {
+        return jpaRepository.countByProjectIdAndGeneratedByAi(projectId, generatedByAi);
+    }
 }

@@ -33,4 +33,6 @@ public interface ProjectMemberRepositoryPort {
     boolean existsById(UUID projectMemberId);
 
     List<ProjectMember> findByUserIdAndWorkspaceId(UUID userId, UUID workspaceId);
+
+    long countByProjectId(UUID projectId);
 }

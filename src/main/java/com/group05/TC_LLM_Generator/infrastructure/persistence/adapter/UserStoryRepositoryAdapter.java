@@ -1,6 +1,7 @@
 package com.group05.TC_LLM_Generator.infrastructure.persistence.adapter;
 
 import com.group05.TC_LLM_Generator.application.port.out.UserStoryRepositoryPort;
+import com.group05.TC_LLM_Generator.domain.model.enums.StoryStatus;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.UserStory;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.repository.UserStoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -59,5 +60,15 @@ public class UserStoryRepositoryAdapter implements UserStoryRepositoryPort {
     @Override
     public boolean existsById(UUID userStoryId) {
         return jpaRepository.existsById(userStoryId);
+    }
+
+    @Override
+    public long countByProjectId(UUID projectId) {
+        return jpaRepository.countByProject_ProjectId(projectId);
+    }
+
+    @Override
+    public long countByProjectIdAndStatus(UUID projectId, String status) {
+        return jpaRepository.countByProject_ProjectIdAndStatus(projectId, StoryStatus.valueOf(status));
     }
 }

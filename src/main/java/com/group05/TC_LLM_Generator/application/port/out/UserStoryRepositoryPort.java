@@ -29,4 +29,8 @@ public interface UserStoryRepositoryPort {
     void deleteById(UUID userStoryId);
 
     boolean existsById(UUID userStoryId);
+
+    long countByProjectId(UUID projectId);
+
+    long countByProjectIdAndStatus(UUID projectId, String status);
 }

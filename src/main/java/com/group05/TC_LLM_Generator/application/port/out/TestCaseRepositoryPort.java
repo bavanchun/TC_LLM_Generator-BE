@@ -47,4 +47,8 @@ public interface TestCaseRepositoryPort {
     boolean existsById(UUID testCaseId);
 
     long count();
+
+    long countByProjectId(UUID projectId);
+
+    long countByProjectIdAndGeneratedByAi(UUID projectId, boolean generatedByAi);
 }

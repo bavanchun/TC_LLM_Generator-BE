@@ -52,5 +52,7 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, UU
     Page<ProjectMember> findByProject_ProjectId(UUID projectId, Pageable pageable);
 
     List<ProjectMember> findByUser_UserIdAndProject_Workspace_WorkspaceId(UUID userId, UUID workspaceId);
+
+    long countByProject_ProjectId(UUID projectId);
 }
 

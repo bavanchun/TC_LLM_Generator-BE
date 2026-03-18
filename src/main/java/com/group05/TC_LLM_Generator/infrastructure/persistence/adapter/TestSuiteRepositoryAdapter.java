@@ -61,4 +61,9 @@ public class TestSuiteRepositoryAdapter implements TestSuiteRepositoryPort {
     public boolean existsById(UUID testSuiteId) {
         return jpaRepository.existsById(testSuiteId);
     }
+
+    @Override
+    public long countByProjectId(UUID projectId) {
+        return jpaRepository.countByProject_ProjectId(projectId);
+    }
 }

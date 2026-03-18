@@ -1,6 +1,7 @@
 package com.group05.TC_LLM_Generator.presentation.controller;
 
 import com.group05.TC_LLM_Generator.application.service.ProjectService;
+import com.group05.TC_LLM_Generator.application.service.ProjectOverviewService;
 import com.group05.TC_LLM_Generator.application.service.UserService;
 import com.group05.TC_LLM_Generator.application.service.WorkspaceMemberService;
 import com.group05.TC_LLM_Generator.domain.model.enums.ProjectStatus;
@@ -12,6 +13,7 @@ import com.group05.TC_LLM_Generator.presentation.assembler.ProjectModelAssembler
 import com.group05.TC_LLM_Generator.presentation.dto.common.ApiResponse;
 import com.group05.TC_LLM_Generator.presentation.dto.request.CreateProjectRequest;
 import com.group05.TC_LLM_Generator.presentation.dto.request.UpdateProjectRequest;
+import com.group05.TC_LLM_Generator.presentation.dto.response.ProjectOverviewResponse;
 import com.group05.TC_LLM_Generator.presentation.dto.response.ProjectResponse;
 import com.group05.TC_LLM_Generator.presentation.exception.ResourceNotFoundException;
 import com.group05.TC_LLM_Generator.presentation.mapper.ProjectPresentationMapper;
@@ -37,6 +39,7 @@ import java.util.UUID;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final ProjectOverviewService projectOverviewService;
     private final WorkspaceService workspaceService;
     private final UserService userService;
     private final WorkspaceMemberService workspaceMemberService;
@@ -191,5 +194,28 @@ public class ProjectController {
         PagedModel<ProjectResponse> pagedModel = pagedResourcesAssembler.toModel(page, assembler);
 
         return ResponseEntity.ok(ApiResponse.success(pagedModel, "Projects retrieved successfully"));
+    }
+
+    /**
+     * Get project overview / dashboard data
+     * GET /api/v1/projects/{id}/overview
+     */
+    @GetMapping("/{id}/overview")
+    public ResponseEntity<ApiResponse<ProjectOverviewResponse>> getProjectOverview(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("id") UUID id) {
+
+        Project project = projectService.getProjectById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", "id", id));
+
+        UUID currentUserId = UUID.fromString(jwt.getSubject());
+        UUID workspaceId = project.getWorkspace().getWorkspaceId();
+        if (!workspaceMemberService.isMember(workspaceId, currentUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("You do not have access to this project"));
+        }
+
+        ProjectOverviewResponse overview = projectOverviewService.getOverview(id);
+        return ResponseEntity.ok(ApiResponse.success(overview, "Project overview retrieved successfully"));
     }
 }

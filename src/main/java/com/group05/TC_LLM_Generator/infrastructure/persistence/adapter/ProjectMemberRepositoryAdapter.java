@@ -67,4 +67,9 @@ public class ProjectMemberRepositoryAdapter implements ProjectMemberRepositoryPo
     public List<ProjectMember> findByUserIdAndWorkspaceId(UUID userId, UUID workspaceId) {
         return jpaRepository.findByUser_UserIdAndProject_Workspace_WorkspaceId(userId, workspaceId);
     }
+
+    @Override
+    public long countByProjectId(UUID projectId) {
+        return jpaRepository.countByProject_ProjectId(projectId);
+    }
 }

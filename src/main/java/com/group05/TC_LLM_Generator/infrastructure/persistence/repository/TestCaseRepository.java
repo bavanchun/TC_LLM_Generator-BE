@@ -5,6 +5,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -39,4 +41,10 @@ public interface TestCaseRepository extends JpaRepository<TestCase, UUID> {
     List<TestCase> findByTitleContainingIgnoreCase(String title);
 
     Page<TestCase> findByTitleContainingIgnoreCase(String title, Pageable pageable);
+
+    @Query("SELECT COUNT(tc) FROM TestCase tc WHERE tc.userStory.project.projectId = :projectId")
+    long countByProjectId(@Param("projectId") UUID projectId);
+
+    @Query("SELECT COUNT(tc) FROM TestCase tc WHERE tc.userStory.project.projectId = :projectId AND tc.generatedByAi = :generatedByAi")
+    long countByProjectIdAndGeneratedByAi(@Param("projectId") UUID projectId, @Param("generatedByAi") boolean generatedByAi);
 }

@@ -1,5 +1,6 @@
 package com.group05.TC_LLM_Generator.infrastructure.persistence.repository;
 
+import com.group05.TC_LLM_Generator.domain.model.enums.StoryStatus;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.UserStory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -59,4 +60,8 @@ public interface UserStoryRepository extends JpaRepository<UserStory, UUID> {
      * @return List of user stories with the specified status
      */
     List<UserStory> findByStatus(String status);
+
+    long countByProject_ProjectId(UUID projectId);
+
+    long countByProject_ProjectIdAndStatus(UUID projectId, StoryStatus status);
 }
