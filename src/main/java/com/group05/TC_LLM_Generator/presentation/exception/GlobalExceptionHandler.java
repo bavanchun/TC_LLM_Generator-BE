@@ -208,6 +208,19 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle AI/LLM service errors (RunPod unavailable, invalid response, etc.)
+     */
+    @ExceptionHandler(com.group05.TC_LLM_Generator.application.exception.LlmServiceException.class)
+    public ResponseEntity<ApiResponse<Void>> handleLlmServiceException(
+            com.group05.TC_LLM_Generator.application.exception.LlmServiceException ex) {
+        log.error("LLM service error: {}", ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiResponse.error("AI service error: " + ex.getMessage()));
+    }
+
+    /**
      * Handle all other exceptions
      */
     @ExceptionHandler(Exception.class)

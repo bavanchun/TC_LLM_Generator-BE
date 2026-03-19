@@ -31,3 +31,8 @@ app:
   frontend-url: ${APP_FRONTEND_URL:http://localhost:3000}
   frontend-urls: ${APP_FRONTEND_URLS:http://localhost:3000}
   mail-from: ${MAIL_FROM:noreply@example.com}
+
+runpod:
+  endpoint-url: ${RUNPOD_ENDPOINT_URL:https://api.runpod.ai/v2/qzz8zoqdd2mmfk/openai/v1}
+  api-key: ${API_KEY_RUNPOD}
+  model: qwen/qwen2.5-7b-instruct-awq

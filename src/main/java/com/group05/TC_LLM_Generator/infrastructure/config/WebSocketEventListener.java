@@ -76,6 +76,7 @@ public class WebSocketEventListener {
             case WORKSPACE_MEMBER -> "/topic/workspaces/" + event.getParentId() + "/members";
             case PROJECT          -> "/topic/workspaces/" + event.getParentId() + "/projects";
             case STORY            -> "/topic/projects/" + event.getParentId() + "/stories";
+            case TEST_CASE        -> "/topic/projects/" + event.getParentId() + "/test-cases";
             case TEST_PLAN        -> "/topic/projects/" + event.getParentId() + "/test-plans";
             case TEST_SUITE       -> "/topic/projects/" + event.getParentId() + "/test-suites";
         };

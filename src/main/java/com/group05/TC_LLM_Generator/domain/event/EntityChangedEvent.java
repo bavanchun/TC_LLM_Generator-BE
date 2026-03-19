@@ -43,6 +43,7 @@ public class EntityChangedEvent extends ApplicationEvent {
         WORKSPACE_MEMBER,
         PROJECT,
         STORY,
+        TEST_CASE,
         TEST_PLAN,
         TEST_SUITE
     }
