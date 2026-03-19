@@ -1,10 +1,13 @@
 package com.group05.TC_LLM_Generator.application.service;
 
 import com.group05.TC_LLM_Generator.application.port.out.ProjectRepositoryPort;
+import com.group05.TC_LLM_Generator.application.port.out.ProjectMemberRepositoryPort;
 import com.group05.TC_LLM_Generator.domain.event.EntityChangedEvent;
 import com.group05.TC_LLM_Generator.domain.event.EntityChangedEvent.Action;
 import com.group05.TC_LLM_Generator.domain.event.EntityChangedEvent.EntityType;
+import com.group05.TC_LLM_Generator.domain.model.enums.ProjectRole;
 import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.Project;
+import com.group05.TC_LLM_Generator.infrastructure.persistence.entity.ProjectMember;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -12,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,6 +30,7 @@ import java.util.UUID;
 public class ProjectService {
 
     private final ProjectRepositoryPort projectRepository;
+    private final ProjectMemberRepositoryPort projectMemberRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
@@ -39,6 +44,15 @@ public class ProjectService {
         }
         
         Project saved = projectRepository.save(project);
+
+        // Auto-create ProjectMember with Lead role for the creator
+        ProjectMember ownerMember = ProjectMember.builder()
+                .project(saved)
+                .user(saved.getCreatedByUser())
+                .role(ProjectRole.Lead.name())
+                .joinedAt(Instant.now())
+                .build();
+        projectMemberRepository.save(ownerMember);
         
         eventPublisher.publishEvent(new EntityChangedEvent(
                 this, EntityType.PROJECT, Action.CREATED,
