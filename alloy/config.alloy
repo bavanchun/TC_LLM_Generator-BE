@@ -24,8 +24,8 @@ prometheus.scrape "spring_boot" {
   ]
 
   metrics_path    = "/actuator/prometheus"
-  scrape_interval = "30s"
-  scrape_timeout  = "10s"
+  scrape_interval = "60s"
+  scrape_timeout  = "15s"
 
   forward_to = [prometheus.remote_write.grafana_cloud.receiver]
 }
@@ -41,9 +41,12 @@ prometheus.remote_write "grafana_cloud" {
     }
 
     queue_config {
-      // Buffer up to 10,000 samples before blocking — handles short network blips
-      capacity           = 10000
-      max_samples_per_send = 2000
+      // Limit burst to avoid Mimir rate limit (75 req/s, burst 750)
+      capacity             = 5000
+      max_samples_per_send = 500
+      min_backoff          = "5s"
+      max_backoff          = "120s"
+      max_shards           = 4
     }
   }
 }

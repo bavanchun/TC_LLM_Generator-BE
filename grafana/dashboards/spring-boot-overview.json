@@ -12,7 +12,7 @@
         "name": "instance",
         "type": "query",
         "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
-        "query": "label_values(jvm_memory_used_bytes{application=\"TC_LLM_Generator\"}, instance)",
+        "query": "label_values(jvm_memory_used_bytes{job=\"tc-llm-generator\"}, instance)",
         "refresh": 2,
         "includeAll": false,
         "label": "Instance"
@@ -31,7 +31,7 @@
       "id": 2,
       "title": "Request Rate (req/s)",
       "type": "timeseries",
-      "gridPos": { "x": 0, "y": 1, "w": 8, "h": 8 },
+      "gridPos": { "x": 0, "y": 1, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
       "fieldConfig": {
         "defaults": {
@@ -43,68 +43,30 @@
       "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
       "targets": [
         {
-          "expr": "sum(rate(http_server_requests_seconds_count{application=\"TC_LLM_Generator\"}[2m])) by (uri, method)",
-          "legendFormat": "{{method}} {{uri}}",
+          "expr": "sum(rate(spring_security_http_secured_requests_seconds_count{job=\"tc-llm-generator\"}[2m]))",
+          "legendFormat": "req/s",
           "refId": "A"
         }
       ]
     },
     {
       "id": 3,
-      "title": "Error Rate (%)",
+      "title": "Avg Latency (ms)",
       "type": "timeseries",
-      "gridPos": { "x": 8, "y": 1, "w": 8, "h": 8 },
+      "gridPos": { "x": 12, "y": 1, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "red", "mode": "fixed" },
+          "color": { "fixedColor": "blue", "mode": "fixed" },
           "custom": { "lineWidth": 2, "fillOpacity": 10 },
-          "unit": "percent",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 1 },
-              { "color": "red", "value": 5 }
-            ]
-          }
+          "unit": "ms"
         }
       },
       "targets": [
         {
-          "expr": "100 * sum(rate(http_server_requests_seconds_count{application=\"TC_LLM_Generator\", status=~\"5..\"}[2m])) / sum(rate(http_server_requests_seconds_count{application=\"TC_LLM_Generator\"}[2m]))",
-          "legendFormat": "Error %",
+          "expr": "1000 * sum(rate(spring_security_http_secured_requests_seconds_sum{job=\"tc-llm-generator\"}[5m])) / sum(rate(spring_security_http_secured_requests_seconds_count{job=\"tc-llm-generator\"}[5m]))",
+          "legendFormat": "Avg latency",
           "refId": "A"
-        }
-      ]
-    },
-    {
-      "id": 4,
-      "title": "Latency Percentiles (p50 / p95 / p99)",
-      "type": "timeseries",
-      "gridPos": { "x": 16, "y": 1, "w": 8, "h": 8 },
-      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
-      "fieldConfig": {
-        "defaults": {
-          "custom": { "lineWidth": 2, "fillOpacity": 5 },
-          "unit": "s"
-        }
-      },
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{application=\"TC_LLM_Generator\"}[2m])) by (le))",
-          "legendFormat": "p50",
-          "refId": "A"
-        },
-        {
-          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"TC_LLM_Generator\"}[2m])) by (le))",
-          "legendFormat": "p95",
-          "refId": "B"
-        },
-        {
-          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application=\"TC_LLM_Generator\"}[2m])) by (le))",
-          "legendFormat": "p99",
-          "refId": "C"
         }
       ]
     },
@@ -126,17 +88,17 @@
       },
       "targets": [
         {
-          "expr": "jvm_memory_used_bytes{application=\"TC_LLM_Generator\", area=\"heap\"}",
+          "expr": "jvm_memory_used_bytes{job=\"tc-llm-generator\", area=\"heap\"}",
           "legendFormat": "Used",
           "refId": "A"
         },
         {
-          "expr": "jvm_memory_max_bytes{application=\"TC_LLM_Generator\", area=\"heap\"}",
+          "expr": "jvm_memory_max_bytes{job=\"tc-llm-generator\", area=\"heap\"}",
           "legendFormat": "Max",
           "refId": "B"
         },
         {
-          "expr": "jvm_memory_committed_bytes{application=\"TC_LLM_Generator\", area=\"heap\"}",
+          "expr": "jvm_memory_committed_bytes{job=\"tc-llm-generator\", area=\"heap\"}",
           "legendFormat": "Committed",
           "refId": "C"
         }
@@ -153,8 +115,8 @@
       },
       "targets": [
         {
-          "expr": "rate(jvm_gc_pause_seconds_sum{application=\"TC_LLM_Generator\"}[2m])",
-          "legendFormat": "{{action}} {{cause}}",
+          "expr": "sum(rate(jvm_gc_pause_seconds_sum{job=\"tc-llm-generator\"}[2m]))",
+          "legendFormat": "GC pause s/s",
           "refId": "A"
         }
       ]
@@ -177,22 +139,22 @@
       },
       "targets": [
         {
-          "expr": "hikaricp_connections_active{application=\"TC_LLM_Generator\"}",
+          "expr": "hikaricp_connections_active{job=\"tc-llm-generator\"}",
           "legendFormat": "Active",
           "refId": "A"
         },
         {
-          "expr": "hikaricp_connections_idle{application=\"TC_LLM_Generator\"}",
+          "expr": "hikaricp_connections_idle{job=\"tc-llm-generator\"}",
           "legendFormat": "Idle",
           "refId": "B"
         },
         {
-          "expr": "hikaricp_connections_pending{application=\"TC_LLM_Generator\"}",
+          "expr": "hikaricp_connections_pending{job=\"tc-llm-generator\"}",
           "legendFormat": "Pending",
           "refId": "C"
         },
         {
-          "expr": "hikaricp_connections_max{application=\"TC_LLM_Generator\"}",
+          "expr": "hikaricp_connections_max{job=\"tc-llm-generator\"}",
           "legendFormat": "Max",
           "refId": "D"
         }
@@ -209,17 +171,17 @@
       },
       "targets": [
         {
-          "expr": "jvm_threads_live_threads{application=\"TC_LLM_Generator\"}",
+          "expr": "jvm_threads_live_threads{job=\"tc-llm-generator\"}",
           "legendFormat": "Live",
           "refId": "A"
         },
         {
-          "expr": "jvm_threads_daemon_threads{application=\"TC_LLM_Generator\"}",
+          "expr": "jvm_threads_daemon_threads{job=\"tc-llm-generator\"}",
           "legendFormat": "Daemon",
           "refId": "B"
         },
         {
-          "expr": "jvm_threads_peak_threads{application=\"TC_LLM_Generator\"}",
+          "expr": "jvm_threads_peak_threads{job=\"tc-llm-generator\"}",
           "legendFormat": "Peak",
           "refId": "C"
         }
@@ -243,8 +205,58 @@
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto", "colorMode": "background" },
       "targets": [
         {
-          "expr": "process_uptime_seconds{application=\"TC_LLM_Generator\"}",
+          "expr": "process_uptime_seconds{job=\"tc-llm-generator\"}",
           "legendFormat": "Uptime",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "row",
+      "title": "CPU & Error Logs",
+      "gridPos": { "x": 0, "y": 27, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "id": 13,
+      "title": "CPU Usage (%)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 28, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "custom": { "lineWidth": 2, "fillOpacity": 10 } }
+      },
+      "targets": [
+        {
+          "expr": "process_cpu_usage{job=\"tc-llm-generator\"} * 100",
+          "legendFormat": "Process CPU",
+          "refId": "A"
+        },
+        {
+          "expr": "system_cpu_usage{job=\"tc-llm-generator\"} * 100",
+          "legendFormat": "System CPU",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "title": "Error Log Rate (5m)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 28, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "red", "mode": "fixed" },
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "unit": "percent"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(logback_events_total{job=\"tc-llm-generator\",level=\"error\"}[5m])) / sum(rate(logback_events_total{job=\"tc-llm-generator\"}[5m])) * 100",
+          "legendFormat": "Error log %",
           "refId": "A"
         }
       ]
