@@ -36,3 +36,47 @@ runpod:
   endpoint-url: ${RUNPOD_ENDPOINT_URL:https://api.runpod.ai/v2/qzz8zoqdd2mmfk/openai/v1}
   api-key: ${API_KEY_RUNPOD}
   model: qwen/qwen2.5-7b-instruct-awq
+
+# ============================================
+# Observability: Actuator, Metrics, Tracing
+# ============================================
+management:
+  server:
+    # Dedicated internal port — NOT exposed to the internet.
+    # Grafana Alloy scrapes this port from within the Docker network.
+    port: 8081
+
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus, metrics
+
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+    prometheus:
+      enabled: true
+
+  metrics:
+    tags:
+      # Common labels attached to every metric for filtering in Grafana
+      application: ${spring.application.name}
+      environment: ${SPRING_ENV:local}
+    distribution:
+      # Histogram buckets for HTTP latency percentiles (p50/p95/p99)
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests: 100ms, 250ms, 500ms, 1s, 2s, 5s
+
+  tracing:
+    # Controlled via env var: 0.0 locally (no traces), 1.0 in Docker with Alloy
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:0.0}
+
+  otlp:
+    tracing:
+      # Alloy OTLP HTTP receiver. Falls back to localhost for local dev (fails silently).
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318}/v1/traces

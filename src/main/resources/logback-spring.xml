@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- ================================================================
+         DEV PROFILE: Human-readable colored console output
+         Active when: spring.profiles.active contains "dev" but NOT "prod"
+         ================================================================ -->
+    <springProfile name="dev &amp; !prod">
+        <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+        <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+
+        <!-- Reduce noise from framework internals -->
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+        <logger name="org.springframework.web.servlet.DispatcherServlet" level="DEBUG"/>
+    </springProfile>
+
+    <!-- ================================================================
+         PROD PROFILE: Structured JSON output for Loki ingestion
+         Active when: spring.profiles.active contains "prod"
+
+         Each log line is a JSON object with fields:
+           timestamp, level, logger_name, thread_name, message,
+           traceId, spanId, requestId  (via MDC)
+         ================================================================ -->
+    <springProfile name="prod">
+        <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <!-- Suppress the default "@version" field — not useful in Loki -->
+                <fieldNames>
+                    <version>[ignore]</version>
+                    <levelValue>[ignore]</levelValue>
+                </fieldNames>
+
+                <!-- Include MDC fields (requestId, traceId, spanId) as top-level JSON fields -->
+                <includeMdcKeyName>requestId</includeMdcKeyName>
+                <includeMdcKeyName>traceId</includeMdcKeyName>
+                <includeMdcKeyName>spanId</includeMdcKeyName>
+
+                <!-- Do NOT include caller data (file/line) — expensive and noisy in prod -->
+                <includeCallerData>false</includeCallerData>
+
+                <!-- Add application name as a static field for Loki label filtering -->
+                <customFields>{"app":"TC_LLM_Generator"}</customFields>
+
+                <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+                    <maxDepthPerCause>20</maxDepthPerCause>
+                    <shortenedClassNameLength>40</shortenedClassNameLength>
+                    <rootCauseFirst>true</rootCauseFirst>
+                </throwableConverter>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+        </root>
+
+        <!-- Silence verbose framework loggers in production -->
+        <logger name="org.hibernate.SQL" level="WARN"/>
+        <logger name="org.springframework.security" level="WARN"/>
+        <logger name="io.lettuce" level="WARN"/>
+    </springProfile>
+
+</configuration>

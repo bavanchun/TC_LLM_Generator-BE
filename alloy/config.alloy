@@ -1,0 +1,199 @@
+// ================================================================
+// Grafana Alloy — Observability Pipeline
+// TC LLM Generator — Spring Boot backend
+//
+// Pipeline overview:
+//   [1] Prometheus: scrape app:8081/actuator/prometheus → Grafana Cloud
+//   [2] Loki:       Docker container logs → parse JSON → Grafana Cloud
+//   [3] Tempo:      OTLP traces from Spring Boot → Grafana Cloud
+// ================================================================
+
+
+// ================================================================
+// [1] PROMETHEUS — Metrics pipeline
+// ================================================================
+
+// Scrape Spring Boot Actuator metrics endpoint on internal management port
+prometheus.scrape "spring_boot" {
+  targets = [
+    {
+      "__address__" = "app:8081",
+      "job"         = "tc-llm-generator",
+      "service"     = "spring-boot",
+    },
+  ]
+
+  metrics_path    = "/actuator/prometheus"
+  scrape_interval = "30s"
+  scrape_timeout  = "10s"
+
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+// Push collected metrics to Grafana Cloud Prometheus
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_PROM_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_PROM_USER")
+      password = sys.env("GRAFANA_CLOUD_API_KEY")
+    }
+
+    queue_config {
+      // Buffer up to 10,000 samples before blocking — handles short network blips
+      capacity           = 10000
+      max_samples_per_send = 2000
+    }
+  }
+}
+
+
+// ================================================================
+// [2] LOKI — Logs pipeline
+// ================================================================
+
+// Discover all running Docker containers
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// Relabel: keep only our app container; filter out Alloy's own logs
+discovery.relabel "app_containers" {
+  targets = discovery.docker.containers.targets
+
+  // Expose the container name as a meta label for use downstream
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  // Only collect logs from the Spring Boot app container
+  rule {
+    source_labels = ["container"]
+    regex         = "tc-llm-generator-app"
+    action        = "keep"
+  }
+}
+
+// Tail logs from discovered containers via Docker socket
+loki.source.docker "app_logs" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.app_containers.output
+  forward_to = [loki.process.parse_json.receiver]
+
+  // Refresh container list every 30s to pick up container restarts
+  refresh_interval = "30s"
+}
+
+// Parse and enrich log entries
+loki.process "parse_json" {
+  // Parse JSON fields emitted by logstash-logback-encoder
+  stage.json {
+    expressions = {
+      level      = "level",
+      logger     = "logger_name",
+      thread     = "thread_name",
+      trace_id   = "traceId",
+      span_id    = "spanId",
+      request_id = "requestId",
+      message    = "message",
+    }
+  }
+
+  // Promote key fields to Loki labels (keep cardinality low — only stable values)
+  stage.labels {
+    values = {
+      level     = "level",
+      container = "",    // already set by relabel above
+    }
+  }
+
+  // Store trace/request IDs as structured metadata (queryable but not labels)
+  stage.structured_metadata {
+    values = {
+      trace_id   = "trace_id",
+      span_id    = "span_id",
+      request_id = "request_id",
+      logger     = "logger",
+    }
+  }
+
+  // Drop DEBUG logs in production to reduce volume
+  stage.drop {
+    source     = "level"
+    expression = "DEBUG"
+  }
+
+  forward_to = [loki.write.grafana_cloud.receiver]
+}
+
+// Push log entries to Grafana Cloud Loki
+loki.write "grafana_cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_LOKI_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_LOKI_USER")
+      password = sys.env("GRAFANA_CLOUD_API_KEY")
+    }
+  }
+
+  // External labels applied to every log stream sent to Loki
+  external_labels = {
+    app         = "tc-llm-generator",
+    environment = "production",
+  }
+}
+
+
+// ================================================================
+// [3] TEMPO — Distributed tracing pipeline
+// ================================================================
+
+// Receive OTLP spans from Spring Boot (micrometer-tracing-bridge-otel)
+otelcol.receiver.otlp "default" {
+  // gRPC receiver (port 4317) — not used by default; Spring Boot uses HTTP
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  // HTTP receiver (port 4318) — Spring Boot sends here via management.otlp.tracing.endpoint
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces = [otelcol.processor.batch.default.input]
+  }
+}
+
+// Batch spans before export to reduce network calls
+otelcol.processor.batch "default" {
+  timeout          = "5s"
+  send_batch_size  = 512
+
+  output {
+    traces = [otelcol.exporter.otlp.grafana_cloud.input]
+  }
+}
+
+// Forward spans to Grafana Cloud Tempo via OTLP gRPC
+otelcol.exporter.otlp "grafana_cloud" {
+  client {
+    endpoint = sys.env("GRAFANA_CLOUD_TEMPO_URL")
+
+    auth = otelcol.auth.basic.grafana_cloud.handler
+
+    tls {
+      insecure = false
+    }
+  }
+}
+
+// Shared basic auth handler for Tempo
+otelcol.auth.basic "grafana_cloud" {
+  username = sys.env("GRAFANA_CLOUD_TEMPO_USER")
+  password = sys.env("GRAFANA_CLOUD_API_KEY")
+}

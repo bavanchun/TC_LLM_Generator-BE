@@ -140,6 +140,35 @@
 			<version>4.0.0</version>
 		</dependency>
 
+		<!-- ============================================ -->
+		<!-- Observability: Metrics → Prometheus → Grafana Cloud -->
+		<!-- ============================================ -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+		</dependency>
+
+		<!-- Observability: Distributed Tracing → Tempo via OTLP -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-tracing-bridge-otel</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.opentelemetry</groupId>
+			<artifactId>opentelemetry-exporter-otlp</artifactId>
+		</dependency>
+
+		<!-- Observability: Structured JSON Logging → Loki -->
+		<dependency>
+			<groupId>net.logstash.logback</groupId>
+			<artifactId>logstash-logback-encoder</artifactId>
+			<version>8.0</version>
+		</dependency>
+
 		<!-- Swagger/OpenAPI Documentation - v3.x for Spring Boot 4.x -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
