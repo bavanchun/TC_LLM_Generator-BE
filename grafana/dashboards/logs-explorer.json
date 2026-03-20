@@ -1,0 +1,97 @@
+{
+  "title": "TC LLM Generator — Logs Explorer",
+  "description": "Application logs from Loki — level distribution, error browser, request tracing",
+  "tags": ["tc-llm-generator", "logs", "loki"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "level",
+        "type": "custom",
+        "query": "ERROR,WARN,INFO",
+        "current": { "text": "All", "value": "$__all" },
+        "includeAll": true,
+        "allValue": ".*",
+        "label": "Log Level"
+      },
+      {
+        "name": "search",
+        "type": "textbox",
+        "query": "",
+        "label": "Search (requestId / message)"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Log Volume by Level",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 6 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+      "fieldConfig": {
+        "defaults": { "custom": { "lineWidth": 0, "fillOpacity": 80, "drawStyle": "bars", "stacking": { "mode": "normal", "group": "A" } } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "ERROR" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "WARN" },  "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "INFO" },  "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] }
+        ]
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "right" } },
+      "targets": [
+        {
+          "expr": "sum by (level) (count_over_time({app=\"tc-llm-generator\", level=~\"ERROR|WARN|INFO\"} [$__auto]))",
+          "legendFormat": "{{level}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Error & Warn Logs",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 6, "w": 24, "h": 10 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        {
+          "expr": "{app=\"tc-llm-generator\", level=~\"ERROR|WARN\"} |= `$search`",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "All Logs (filtered by level)",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 12 },
+      "datasource": { "type": "loki", "uid": "grafanacloud-logs" },
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "wrapLogMessage": true,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        {
+          "expr": "{app=\"tc-llm-generator\", level=~\"$level\"} |= `$search`",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}
