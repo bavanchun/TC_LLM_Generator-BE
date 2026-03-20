@@ -51,6 +51,11 @@ public class LoginService implements LoginUseCase {
                     return userRepo.save(newUser);
                 });
 
+        // Block login for suspended users
+        if ("SUSPENDED".equals(user.getStatus())) {
+            throw new RuntimeException("Your account has been suspended. Please contact the administrator.");
+        }
+
         ensureDefaultWorkspace(user.getId(), user.getName());
 
         Map<String, String> data = new HashMap<>();

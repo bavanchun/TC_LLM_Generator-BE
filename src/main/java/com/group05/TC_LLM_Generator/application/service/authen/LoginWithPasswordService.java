@@ -43,6 +43,11 @@ public class LoginWithPasswordService implements LoginWithPasswordUseCase {
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         User user = userDetails.getUser();
 
+        // Block login for suspended users
+        if ("SUSPENDED".equals(user.getStatus())) {
+            throw new RuntimeException("Your account has been suspended. Please contact the administrator.");
+        }
+
         ensureDefaultWorkspace(user.getId(), user.getName());
 
         Map<String, String> data = new HashMap<>();
