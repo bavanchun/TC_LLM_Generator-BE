@@ -104,6 +104,91 @@ public class AiGenerationService {
         }
     }
 
+    // ─── Generate AC for Existing Story ────────────────────────────
+
+    /**
+     * Generate acceptance criteria for an existing story in DB.
+     * If the story already has ACs, they are included as context for better AI output.
+     * Returns a preview (list of strings) — does NOT save.
+     */
+    @Transactional(readOnly = true)
+    public List<String> generateAcceptanceCriteriaForExistingStory(UUID userStoryId) {
+        UserStory story = userStoryRepository.findById(userStoryId)
+                .orElseThrow(() -> new IllegalArgumentException("User story not found: " + userStoryId));
+
+        List<AcceptanceCriteria> existingAcs = story.getAcceptanceCriteria();
+
+        String systemPrompt = """
+                You are a senior QA engineer and business analyst. Generate acceptance criteria \
+                for the given user story following the Given/When/Then format. Each criterion must be:
+                1. Specific and measurable (no vague terms like "appropriate", "proper")
+                2. Independent (testable on its own)
+                3. Cover both happy path and edge cases
+                4. Include validation rules where applicable
+                
+                If existing acceptance criteria are provided, analyze them and generate IMPROVED \
+                versions that are more comprehensive and testable. Do not simply rephrase — add missing \
+                scenarios and refine existing ones.
+                
+                Return ONLY a valid JSON object with key "criteria" containing an array of strings. \
+                Do not add any extra text or explanation outside the JSON.""";
+
+        StringBuilder userPromptBuilder = new StringBuilder();
+        userPromptBuilder.append(String.format("""
+                Generate acceptance criteria for this user story:
+                
+                Title: %s
+                As a: %s
+                I want to: %s
+                So that: %s
+                Description: %s
+                """,
+                nullSafe(story.getTitle()),
+                nullSafe(story.getAsA()),
+                nullSafe(story.getIWantTo()),
+                nullSafe(story.getSoThat()),
+                nullSafe(story.getDescription())));
+
+        // Include existing ACs as context for smarter regeneration
+        if (existingAcs != null && !existingAcs.isEmpty()) {
+            userPromptBuilder.append("\nExisting Acceptance Criteria (improve and expand upon these):\n");
+            for (int i = 0; i < existingAcs.size(); i++) {
+                userPromptBuilder.append(String.format("%d. %s\n", i + 1, existingAcs.get(i).getContent()));
+            }
+        }
+
+        userPromptBuilder.append("\nGenerate 4-6 comprehensive, testable acceptance criteria.");
+        userPromptBuilder.append("\nReturn: {\"criteria\":[\"Given... When... Then...\",\"...\"]}");
+
+        List<ChatMessage> messages = List.of(
+                ChatMessage.builder().role("system").content(systemPrompt).build(),
+                ChatMessage.builder().role("user").content(userPromptBuilder.toString()).build()
+        );
+
+        try {
+            String response = llmProvider.chatCompletion(messages, 0.3, 1500, true);
+            String json = extractJson(response);
+            JsonNode node = objectMapper.readTree(json);
+
+            JsonNode criteriaNode = node.has("criteria") ? node.get("criteria") : node;
+            if (!criteriaNode.isArray()) {
+                throw new LlmServiceException("AI response missing criteria array");
+            }
+
+            List<String> criteria = new ArrayList<>();
+            for (JsonNode item : criteriaNode) {
+                criteria.add(item.asText());
+            }
+            return criteria;
+
+        } catch (LlmServiceException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to generate acceptance criteria for existing story via AI", e);
+            throw new LlmServiceException("AI failed to generate acceptance criteria. Please try again.", e);
+        }
+    }
+
     // ─── Refine User Story ───────────────────────────────────────────
 
     /**

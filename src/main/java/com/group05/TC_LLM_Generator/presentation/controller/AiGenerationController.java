@@ -56,6 +56,20 @@ public class AiGenerationController {
     }
 
     /**
+     * POST /api/v1/user-stories/{id}/generate-acceptance-criteria
+     * Generate AC for an existing story. Returns a preview (does NOT save).
+     * Includes existing ACs as context for smarter regeneration.
+     */
+    @PostMapping("/api/v1/user-stories/{userStoryId}/generate-acceptance-criteria")
+    public ResponseEntity<ApiResponse<List<String>>> generateACForExistingStory(
+            @PathVariable UUID userStoryId) {
+        log.info("Generate acceptance criteria requested for existing story: {}", userStoryId);
+        List<String> criteria = aiGenerationService.generateAcceptanceCriteriaForExistingStory(userStoryId);
+        return ResponseEntity.ok(ApiResponse.success(criteria,
+                String.format("Generated %d acceptance criteria", criteria.size())));
+    }
+
+    /**
      * POST /api/v1/ai/generate-acceptance-criteria
      * Generates acceptance criteria suggestions from story text fields (pre-save).
      */
