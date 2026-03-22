@@ -11,12 +11,12 @@ jobs:
     steps:
       - name: Pull latest code
         run: |
-          cd /home/vchun/Code/swd/TC_LLM_Generator-BE
+          cd /var/www/TC_LLM_Generator-BE
           git pull origin dev
 
       - name: Build and restart Docker
         run: |
-          cd /home/vchun/Code/swd/TC_LLM_Generator-BE
+          cd /var/www/TC_LLM_Generator-BE
           docker compose down
           docker compose up -d --build
 
