@@ -12,7 +12,6 @@ jobs:
       - name: Pull latest code
         run: |
           cd /var/www/TC_LLM_Generator-BE-PROD
-          git reset --hard origin/main
           git pull origin main
 
       - name: Build and restart Docker
