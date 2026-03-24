@@ -1,0 +1,119 @@
+services:
+  #postgres:
+  #  image: postgres:17.6
+  #  container_name: postgres-db
+  #  restart: unless-stopped
+  #  environment:
+  #    POSTGRES_USER: postgres
+  #    POSTGRES_PASSWORD: 12345
+  #    POSTGRES_DB: testcase_llm_generator
+  #  ports:
+  #    - "5432:5432"
+  #  volumes:
+  #    - pgdata_vol:/var/lib/postgresql/data
+  #  networks:
+  #    - testcase_llm_generator_net
+  #  healthcheck:
+  #    test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #    interval: 10s
+  #    timeout: 5s
+  #    retries: 5
+  #    start_period: 10s
+
+  redis:
+    image: redis:8.6.1
+    container_name: redis-signup-cache-prod
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --appendonly yes
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_vol:/data
+    networks:
+      - testcase_llm_generator_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tc-llm-generator-app-prod
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Activate "prod" profile so logback outputs JSON and actuator is fully configured
+      SPRING_PROFILES_ACTIVE: postgres,dev,prod
+      SPRING_ENV: production
+
+      # Tracing: 10% sampling in production (adjust as needed; 1.0 = 100%)
+      TRACING_SAMPLING_PROBABILITY: "0.1"
+
+      # OTLP traces → Grafana Alloy receiver (within Docker network)
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
+    ports:
+      # Public API port only — management port 8081 is intentionally NOT exposed
+      - "8080:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - testcase_llm_generator_net
+
+  # ============================================================
+  # Grafana Alloy — Observability pipeline agent
+  #
+  # Responsibilities:
+  #   1. Scrape /actuator/prometheus from app:8081 → push to Grafana Cloud Prometheus
+  #   2. Collect Docker container logs → push to Grafana Cloud Loki
+  #   3. Receive OTLP traces from app → forward to Grafana Cloud Tempo
+  # ============================================================
+  alloy:
+    image: grafana/alloy:latest
+    container_name: tc-llm-alloy-prod
+    restart: unless-stopped
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      # Docker socket: required for loki.source.docker to read container logs
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      # Grafana Cloud credentials — fill these in .env
+      GRAFANA_CLOUD_PROM_URL:   ${GRAFANA_CLOUD_PROM_URL}
+      GRAFANA_CLOUD_PROM_USER:  ${GRAFANA_CLOUD_PROM_USER}
+      GRAFANA_CLOUD_LOKI_URL:   ${GRAFANA_CLOUD_LOKI_URL}
+      GRAFANA_CLOUD_LOKI_USER:  ${GRAFANA_CLOUD_LOKI_USER}
+      GRAFANA_CLOUD_TEMPO_URL:  ${GRAFANA_CLOUD_TEMPO_URL}
+      GRAFANA_CLOUD_TEMPO_USER: ${GRAFANA_CLOUD_TEMPO_USER}
+      GRAFANA_CLOUD_API_KEY:    ${GRAFANA_CLOUD_API_KEY}
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+    ports:
+      # Alloy UI — useful for debugging pipeline health: http://localhost:12345
+      - "12345:12345"
+      # OTLP HTTP receiver — Spring Boot sends traces here (internal only)
+      # Not exposed to host; app reaches it via Docker network
+    networks:
+      - testcase_llm_generator_net
+    depends_on:
+      - app
+
+volumes:
+  pgdata_vol:
+  redis_data_vol:
+
+networks:
+  testcase_llm_generator_net:
+    driver: bridge
