@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
+import org.springframework.scheduling.annotation.Async;
 
 @Slf4j
 @Component
@@ -20,6 +21,7 @@ public class EmailSenderAdapter implements EmailSenderPort {
     @Value("${app.mail-from}")
     private String fromAddress;
 
+    @Async
     @Override
     public void sendVerificationEmail(String toEmail, String fullName, String verificationUrl) {
         try {
@@ -105,6 +107,7 @@ public class EmailSenderAdapter implements EmailSenderPort {
                 """.formatted(fullName, verificationUrl);
     }
 
+    @Async
     @Override
     public void sendWorkspaceInvitationEmail(String toEmail, String inviterName,
                                               String workspaceName, String acceptUrl) {
@@ -188,6 +191,7 @@ public class EmailSenderAdapter implements EmailSenderPort {
                 """.formatted(inviterName, workspaceName, acceptUrl);
     }
 
+    @Async
     @Override
     public void sendPasswordResetEmail(String toEmail, String fullName, String resetUrl) {
         try {
