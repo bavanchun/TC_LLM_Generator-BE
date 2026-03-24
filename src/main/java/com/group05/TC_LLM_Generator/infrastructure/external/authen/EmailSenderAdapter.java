@@ -57,9 +57,7 @@ public class EmailSenderAdapter implements EmailSenderPort {
                                     <!-- Header -->
                                     <tr>
                                         <td style="background:#18181b;padding:32px 40px;text-align:center;">
-                                            <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;letter-spacing:-0.025em;">
-                                                ✓ QA Artifacts
-                                            </h1>
+                                            <img src="https://static.quraex.com/assets/logo.png" alt="QA Artifacts" width="140" style="display:block;margin:0 auto;">
                                         </td>
                                     </tr>
                                     <!-- Body -->
@@ -144,9 +142,7 @@ public class EmailSenderAdapter implements EmailSenderPort {
                                     <!-- Header -->
                                     <tr>
                                         <td style="background:#18181b;padding:32px 40px;text-align:center;">
-                                            <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;letter-spacing:-0.025em;">
-                                                ✓ QA Artifacts
-                                            </h1>
+                                            <img src="https://static.quraex.com/assets/logo.png" alt="QA Artifacts" width="140" style="display:block;margin:0 auto;">
                                         </td>
                                     </tr>
                                     <!-- Body -->
@@ -227,9 +223,7 @@ public class EmailSenderAdapter implements EmailSenderPort {
                                     <!-- Header -->
                                     <tr>
                                         <td style="background:#18181b;padding:32px 40px;text-align:center;">
-                                            <h1 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;letter-spacing:-0.025em;">
-                                                ✓ QA Artifacts
-                                            </h1>
+                                            <img src="https://static.quraex.com/assets/logo.png" alt="QA Artifacts" width="140" style="display:block;margin:0 auto;">
                                         </td>
                                     </tr>
                                     <!-- Body -->
