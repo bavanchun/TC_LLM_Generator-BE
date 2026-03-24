@@ -27,7 +27,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("http://localhost:3000", "http://127.0.0.1:3000")
+                .setAllowedOriginPatterns(
+                    "http://localhost:3000",
+                    "http://127.0.0.1:3000",
+                    "https://quraex.com",
+                    "https://www.quraex.com"
+                )
                 .withSockJS();
     }
 
